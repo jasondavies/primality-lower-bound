@@ -1,0 +1,114 @@
+# A Lower Bound for Primality — Lean 4 formalisation
+
+A Lean 4 / Mathlib formalisation of
+
+> E. Allender, M. Saks, I. Shparlinski, *A Lower Bound for Primality*,
+> ECCC Comment 1 on Report TR99-010 (preliminary version in CCC 1999).
+> <https://eccc.weizmann.ac.il/report/1999/010/comment/1/download/>
+
+The paper shows that `Maj` is AC⁰-Turing reducible to the set of primes, to GCD and to
+the square-free numbers. Together with Razborov–Smolensky this gives the corollary that none of
+these sets is in AC⁰[p] for any prime p.
+
+## Building
+
+```
+lake exe cache get
+lake build
+```
+
+The toolchain is Lean `v4.34.0` with Mathlib `v4.34.0`. The development contains no `sorry`
+and declares no axioms. `#print axioms` on every main theorem shows only `propext`,
+`Classical.choice` and `Quot.sound`.
+
+## What is proved
+
+| Paper | Lean | Assumptions |
+|---|---|---|
+| Lemma 4: `Maj ≤ᵀ mult` | `maj_reduces_mult` | none |
+| Lemma 5.1: `mult ≤ᵀ GCD` | `mult_reduces_gcd` | none |
+| Lemma 5.2: `mult ≤ᵀ Primes` | `mult_reduces_primes` | `PageEstimate` |
+| Lemma 5.3: `mult ≤ᵀ Square-Free` | `mult_reduces_squarefree` | none |
+| Theorem 1: `TC⁰ ⊆ AC⁰[GCD]` | `tc0_subset_ac0_gcd`, `tc0DAG_subset_ac0DAG_gcd` | none |
+| Theorem 1: `TC⁰ ⊆ AC⁰[Square-Free]` | `tc0_subset_ac0_squarefree`, `tc0DAG_subset_ac0DAG_squarefree` | none |
+| Theorem 1: `TC⁰ ⊆ AC⁰[Primes]` | `tc0_subset_ac0_primes`, `tc0DAG_subset_ac0DAG_primes` | `PageEstimate` |
+| Corollary 2: not in `AC⁰[p]` | `gcd_not_mem_ac0DAG_mod`, `squarefree_not_mem_ac0DAG_mod`, `primes_not_mem_ac0DAG_mod` | `SmolenskyTheorem` (and `PageEstimate` for Primes) |
+| Corollary 2: size `≥ 2^(N^δ)` | `gcd_exp_lower_bound`, `squarefree_exp_lower_bound`, `primes_exp_lower_bound` | `SmolenskyExpTheorem` (and `PageEstimate` for Primes) |
+| Transitivity of `≤ᵀ` | `Reduces.trans` | none |
+
+### External theorems used as hypotheses
+
+Two deep results cited by the paper are not in Mathlib. They are stated as explicit `Prop`s and
+passed as hypotheses, never as axioms.
+
+- **`PageEstimate`** (`Page.lean`) is the paper's equation (1). It says that, uniformly for
+  primes `p ≤ n` and `1 ≤ l < p`, the number of primes `q ≤ 2ⁿ` with `q ≡ l (mod p)` is
+  asymptotic to `2ⁿ / (n (p − 1) ln 2)`. This follows from Page's theorem or the
+  Siegel–Walfisz theorem. From it we derive the only consequence the proof uses:
+  `PageEstimate.window` gives a lower bound on primes in a residue class in `(2ⁿ, 2ⁿ⁺¹]`.
+- **`SmolenskyTheorem`** (`Main.lean`) says that for distinct primes `p ≠ q`, `Mod_q` is not in
+  AC⁰[Mod_p] (DAG model). **`SmolenskyExpTheorem`** (`Quantitative.lean`) is the quantitative
+  form: depth-d circuits need size `2^(n^δ)`.
+
+## Circuit model
+
+`Circuit.lean` defines unbounded fan-in circuits with `AND`, `OR`, `NOT` and oracle gates as
+formulas (trees). It also defines non-uniform AC⁰ Turing reducibility `A ≤ᵀ B`, meaning
+polynomial size and constant depth, and `AC0 L`. The paper's circuits are DAGs, so `DAG.lean`
+defines DAG circuits whose size counts gates plus wires. It proves `dagReduces_iff`, which says
+that the DAG model and the formula model give exactly the same reducibility. Theorem 1 and
+Corollary 2 are stated in both models, and the hypotheses are stated in the DAG model.
+
+Inputs are bit strings `x_{n−1} … x_0` that denote `∑ xᵢ 2ⁱ`, as in the paper. `GCD` and
+`mult` take inputs of length `3m` and `2m`, read as triples and pairs of `m`-bit numbers.
+
+## Deviations from the paper's proofs
+
+The statements follow the paper. Some proofs were changed to make them simpler to formalise:
+
+- **Lemma 4.** The paper computes `f_j(x) − r`, which can be negative. Instead we append
+  `p_j − r` ones to `x`, so the query is pure wiring. Chinese remaindering uses the first
+  `⌊log₂ n⌋ + 1` odd primes.
+- **Bounding `p_j`.** `mult(x, j)` allows `j` up to `|x|`, so the circuits need `p_j` to be
+  polynomial in `j`. We prove `p_j ≤ 8(j+1)²` from the central binomial coefficient
+  (`NthPrime.lean`). Mathlib has no Chebyshev lower bound.
+- **Lemma 5.2 (Primes).** We query `x + p·y` with `y ≥ 2` and no random sign. This keeps the
+  query positive and different from `p`. The window is `(2^N, 2^{N+1}]` with
+  `N = m + p + 1`, so that `p ≤ N` as equation (1) requires. Adleman's probabilistic argument
+  becomes a greedy hitting-set lemma (`HittingSet.lean`).
+- **Lemma 5.3 (Square-Free).** The paper multiplies `x` by `p` in AC⁰ and uses estimate (2),
+  which involves `ζ(2)` and Möbius sums. We avoid multiplication. Since `2^{p(p−1)} ≡ 1 (mod p²)`,
+  a number `h(x) ≡ p·x (mod p²)` can be wired directly from the bits of `x`. The advice `y`
+  goes into the high bits. An elementary sieve then shows that at least a quarter of the
+  candidates are square-free (`SquareFreeCount.lean`).
+- **Proposition 3.** Only addition of a hard-wired constant is needed. It is implemented and
+  proved as a carry-lookahead adder (`Adder.lean`). Short inputs are handled by brute-force DNFs.
+- **Quantitative Corollary 2.** The exponential bound is derived by padding: a circuit on `N`
+  bits also decides shorter inputs. For `GCD` it is stated for input lengths divisible by 3,
+  because other lengths encode no triple and `GCD` is constant on them. The bound is on DAG
+  size, which counts gates plus wires. Wires must be counted so that one gate cannot read an
+  input many times for free. For circuits without repeated wires, the number of wires is at most
+  polynomial in the number of gates, so the bound is still exponential in the gate count.
+
+The remarks and open problems in Section 4 are not formalised. This includes the parity of
+`ω(x)`.
+
+## Files
+
+| File | Contents |
+|---|---|
+| `Circuit.lean` | formulas, size and depth, substitution, composition, `≤ᵀ`, transitivity, DNF |
+| `DAG.lean` | DAG circuits and equivalence with formulas |
+| `Bits.lean` | values of bit strings |
+| `Languages.lean` | `Maj`, `Mod_k`, `Primes`, `Square-Free`, `GCD`, `mult`, `TC⁰`, `p_j` |
+| `NthPrime.lean` | `p_j ≤ 8 (j+1)²` |
+| `Lemma4.lean` | `Maj ≤ᵀ mult` |
+| `MultWrapper.lean` | building `mult` circuits from tests for divisibility by `p_j` |
+| `GCD.lean` | `mult ≤ᵀ GCD` |
+| `HittingSet.lean` | Adleman's argument as a hitting-set lemma |
+| `SquareFreeCount.lean`, `SquareFree.lean` | `mult ≤ᵀ Square-Free` |
+| `Adder.lean` | constant-depth adder |
+| `Page.lean` | equation (1) and its consequence |
+| `Primes.lean` | `mult ≤ᵀ Primes` |
+| `Main.lean` | Theorem 1 and Corollary 2 |
+| `Quantitative.lean` | the exponential form of Corollary 2 |
