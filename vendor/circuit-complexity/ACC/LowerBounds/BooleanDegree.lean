@@ -1,3 +1,9 @@
+/-
+Local compatibility changes for Lean/Mathlib 4.34.0: updated deprecated syntax
+and cleaned up proof warnings.
+See the package UPSTREAM.md for provenance and the modification list.
+-/
+
 import Mathlib.Data.Fintype.Option
 import Mathlib.Algebra.MvPolynomial.Degrees
 import Mathlib.LinearAlgebra.Dimension.Finite
@@ -52,13 +58,13 @@ private theorem monomial_eq_one_or_zero {α : Type*} [DecidableEq α]
     monomial (K := K) s x = if ∀ i ∈ s, x i = true then 1 else 0 := by
   classical
   by_cases h : ∀ i ∈ s, x i = true
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     simp only [monomial]
     apply Finset.prod_eq_one
     intro i hi
     simp [h i hi]
-  · rw [if_neg h]
-    push_neg at h
+  · rw [ite_eq_right h]
+    push Not at h
     obtain ⟨i, hi, hxi⟩ := h
     simp only [monomial]
     apply Finset.prod_eq_zero hi
@@ -72,18 +78,18 @@ theorem monomial_mul {α : Type*} [DecidableEq α]
   simp only [Pi.mul_apply, monomial_eq_one_or_zero]
   by_cases hs : ∀ i ∈ s, x i = true
   · by_cases ht : ∀ i ∈ t, x i = true
-    · rw [if_pos hs, if_pos ht, if_pos]
+    · rw [ite_eq_left hs, ite_eq_left ht, ite_eq_left]
       · simp
       · intro i hi
         exact (Finset.mem_union.mp hi).elim (hs i) (ht i)
-    · rw [if_pos hs, if_neg ht, mul_zero, if_neg]
+    · rw [ite_eq_left hs, ite_eq_right ht, mul_zero, ite_eq_right]
       intro hst
       exact ht fun i hi ↦ hst i (Finset.mem_union_right s hi)
   · by_cases ht : ∀ i ∈ t, x i = true
-    · rw [if_neg hs, if_pos ht, zero_mul, if_neg]
+    · rw [ite_eq_right hs, ite_eq_left ht, zero_mul, ite_eq_right]
       intro hst
       exact hs fun i hi ↦ hst i (Finset.mem_union_left t hi)
-    · rw [if_neg hs, if_neg ht, zero_mul, if_neg]
+    · rw [ite_eq_right hs, ite_eq_right ht, zero_mul, ite_eq_right]
       intro hst
       exact hs fun i hi ↦ hst i (Finset.mem_union_left t hi)
 
@@ -106,7 +112,7 @@ theorem mul_mem_degreeSpace {α : Type*} [Fintype α] {a b : ℕ}
       rw [monomial_mul]
       apply monomial_mem_degreeSpace
       exact (Finset.card_union_le _ _).trans (Nat.add_le_add s.2 t.2)
-    | zero => simpa using Submodule.zero_mem (degreeSpace (K := K) α (a + b))
+    | zero => simp
     | add g h _ _ hg hh =>
       simpa [mul_add] using Submodule.add_mem _ hg hh
     | smul c g _ hg =>
@@ -115,7 +121,7 @@ theorem mul_mem_degreeSpace {α : Type*} [Fintype α] {a b : ℕ}
       funext x
       simp only [Pi.mul_apply, Pi.smul_apply, smul_eq_mul]
       ring
-  | zero => simpa using Submodule.zero_mem (degreeSpace (K := K) α (a + b))
+  | zero => simp
   | add f h _ _ hf hh =>
     simpa [add_mul] using Submodule.add_mem _ hf hh
   | smul c f _ hf =>
@@ -139,7 +145,7 @@ private theorem eval_monomial_term {α : Type*} [DecidableEq α]
   apply Finset.prod_congr rfl
   intro i hi
   have hmi : m i ≠ 0 := Finsupp.mem_support_iff.mp hi
-  cases hxi : x i <;> simp [monomial, hxi, hmi]
+  cases x i <;> simp [hmi]
 
 theorem evalPolynomial_eq_sum {α : Type*} [DecidableEq α]
     (F : MvPolynomial α K) :
@@ -185,10 +191,10 @@ def assignmentOfSet {α : Type*} [DecidableEq α] (t : Finset α) : α → Bool 
   classical
   rw [monomial_eq_one_or_zero]
   by_cases hst : s ⊆ t
-  · rw [if_pos hst, if_pos]
+  · rw [ite_eq_left hst, ite_eq_left]
     intro i hi
     simp [assignmentOfSet, hst hi]
-  · rw [if_neg hst, if_neg]
+  · rw [ite_eq_right hst, ite_eq_right]
     intro h
     exact hst fun i hi ↦ by
       have := h i hi
@@ -254,10 +260,10 @@ private theorem monomial_face_false {α : Type*} [DecidableEq α]
       if none ∈ s then 0 else monomial (s.eraseNone) x := by
   classical
   by_cases hs : none ∈ s
-  · rw [if_pos hs]
+  · rw [ite_eq_left hs]
     simp only [face_apply, monomial]
     exact Finset.prod_eq_zero hs (by simp)
-  · rw [if_neg hs]
+  · rw [ite_eq_right hs]
     simp only [face_apply, monomial]
     rw [Finset.prod_eraseNone]
     apply Finset.prod_congr rfl
@@ -300,9 +306,9 @@ theorem face_false_mem {α : Type*} [Fintype α] {d : ℕ}
       if none ∈ s.1 then 0 else monomial s.1.eraseNone by
         funext x
         by_cases hnone : none ∈ s.1
-        · rw [if_pos hnone, Pi.zero_apply]
+        · rw [ite_eq_left hnone, Pi.zero_apply]
           simpa [hnone] using monomial_face_false (K := K) s.1 x
-        · rw [if_neg hnone]
+        · rw [ite_eq_right hnone]
           simpa [hnone] using monomial_face_false (K := K) s.1 x]
     split
     · exact Submodule.zero_mem _
@@ -330,7 +336,7 @@ theorem faceDiff_mem {α : Type*} [Fintype α] {d : ℕ}
       omega
     · exact Submodule.zero_mem _
   | zero =>
-    simpa using Submodule.zero_mem (degreeSpace (K := K) α (d - 1))
+    simp
   | add f g _ _ hf hg =>
     simpa using Submodule.add_mem _ hf hg
   | smul c f _ hf =>
@@ -404,7 +410,7 @@ theorem reindex_mem_degreeSpace {α β : Type*} [Fintype α] [Fintype β]
     apply monomial_mem_degreeSpace
     simpa using s.2
   | zero =>
-    simpa using Submodule.zero_mem (degreeSpace (K := K) β d)
+    simp
   | add f g _ _ hf hg =>
     simpa using Submodule.add_mem _ hf hg
   | smul c f _ hf =>
@@ -428,7 +434,7 @@ theorem face_false_twist {α : Type*} [Fintype α]
   funext x
   simp only [face_apply, twist]
   simp only [univ_option, Finset.prod_insertNone, Option.elim_none,
-    Option.elim_some, Bool.false_eq_true, if_false, one_mul]
+    Option.elim_some, Bool.false_eq_true, ite_false, one_mul]
   rfl
 
 theorem faceDiff_twist {α : Type*} [Fintype α]
@@ -441,7 +447,7 @@ theorem faceDiff_twist {α : Type*} [Fintype α]
   simp only [faceDiff_apply, twist, face_apply, Pi.add_apply, Pi.smul_apply,
     smul_eq_mul]
   simp only [univ_option, Finset.prod_insertNone, Option.elim_none,
-    Option.elim_some, Bool.false_eq_true, if_false, if_true,
+    Option.elim_some, Bool.false_eq_true, ite_false, ite_true,
     one_mul]
   let A : K := ∏ i, if x i then ω else 1
   let u : K := f (fun o ↦ o.elim true x)
@@ -481,7 +487,7 @@ theorem twist_transverse (ω : K) (hω_zero : ω ≠ 0) (hω_one : ω ≠ 1) :
       twist ω f ∈ degreeSpace (K := K) α b →
       a + b < Fintype.card α → f = 0) ?_ ?_ ?_
   · intro α β _ e ih a b f hf htf hab
-    letI : Fintype α := Fintype.ofEquiv β e.symm
+    let : Fintype α := Fintype.ofEquiv β e.symm
     let f' : (α → Bool) → K := reindex (K := K) e.symm f
     have hf' : f' ∈ degreeSpace (K := K) α a :=
       reindex_mem_degreeSpace (K := K) e.symm hf
@@ -531,13 +537,13 @@ theorem twist_transverse (ω : K) (hω_zero : ω ≠ 0) (hω_one : ω ≠ 1) :
         have hnonzero : ω - 1 ≠ 0 := sub_ne_zero.mpr hω_one
         have hu_zero : u = 0 := by
           exact (smul_eq_zero.mp hscaled).resolve_left hnonzero
-        simpa [hu_zero]
+        simp [hu_zero]
       · have hscaled : (ω - 1) • u = -ω • v := by
           have := hw_zero
           simp only [w, Pi.add_def, Pi.smul_def] at this ⊢
           ext x
           have hx := congrFun this x
-          simp only [Pi.add_apply, Pi.smul_apply, Pi.zero_apply, smul_eq_mul] at hx ⊢
+          simp only [Pi.zero_apply, smul_eq_mul] at hx ⊢
           simpa [neg_mul] using eq_neg_of_add_eq_zero_left hx
         have hscaled_mem : (ω - 1) • u ∈ degreeSpace (K := K) α (a - 1) := by
           rw [hscaled]

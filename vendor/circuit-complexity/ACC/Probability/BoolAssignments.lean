@@ -1,3 +1,9 @@
+/-
+Local compatibility changes for Lean/Mathlib 4.34.0: updated deprecated syntax
+and cleaned up proof warnings.
+See the package UPSTREAM.md for provenance and the modification list.
+-/
+
 import Mathlib.Data.Fin.Tuple.Basic
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.ZMod.Basic
@@ -260,14 +266,14 @@ theorem card_filter_append_mul_le_with_left_exceptions
       apply Finset.sum_le_sum
       intro leftAssignment _
       by_cases h_left : leftException leftAssignment
-      · simp only [h_left, if_true]
+      · simp only [h_left, ite_true]
         rw [Fintype.card_subtype]
         exact Nat.mul_le_mul_right scale (by
           simpa [Fintype.card_fun] using
             Finset.card_le_univ
               (Finset.univ.filter fun rightAssignment : Fin right → Bool =>
                 property (Fin.append leftAssignment rightAssignment)))
-      · simp only [h_left, if_false]
+      · simp only [h_left, ite_false]
         rw [Fintype.card_subtype]
         exact h_fiber leftAssignment h_left
     _ ≤

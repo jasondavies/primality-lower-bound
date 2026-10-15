@@ -1,3 +1,9 @@
+/-
+Local compatibility changes for Lean/Mathlib 4.34.0: updated deprecated syntax
+and cleaned up proof warnings.
+See the package UPSTREAM.md for provenance and the modification list.
+-/
+
 import Mathlib.Data.List.MinMax
 import ACC.Formula.Basic
 
@@ -130,35 +136,35 @@ theorem eliminateAndGatesWithPolarity_eval {p : Nat}
       simp only [List.map_map, Function.comp_def] at h_values
       cases negated with
       | false =>
-          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, if_false, eval]
+          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, ite_false, eval]
           rw [eliminateAndGatesList_eval true children inputs]
-          simp only [if_true]
+          simp only [ite_true]
           rw [h_values]
           cases (children.map (fun child => eval child inputs)).all (· == true) <;> rfl
       | true =>
-          simp only [eliminateAndGatesWithPolarity, if_true, eval]
+          simp only [eliminateAndGatesWithPolarity, ite_true, eval]
           rw [eliminateAndGatesList_eval true children inputs]
-          simp only [if_true]
+          simp only [ite_true]
           rw [h_values]
           cases (children.map (fun child => eval child inputs)).all (· == true) <;> rfl
   | .orGate children =>
       cases negated with
       | false =>
-          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, if_false, eval]
+          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, ite_false, eval]
           rw [eliminateAndGatesList_eval false children inputs]
           simp
       | true =>
-          simp only [eliminateAndGatesWithPolarity, if_true, eval]
+          simp only [eliminateAndGatesWithPolarity, ite_true, eval]
           rw [eliminateAndGatesList_eval false children inputs]
           simp
   | .modGate children =>
       cases negated with
       | false =>
-          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, if_false, eval]
+          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, ite_false, eval]
           rw [eliminateAndGatesList_eval false children inputs]
           simp
       | true =>
-          simp only [eliminateAndGatesWithPolarity, if_true, eval]
+          simp only [eliminateAndGatesWithPolarity, ite_true, eval]
           rw [eliminateAndGatesList_eval false children inputs]
           simp
 
@@ -205,31 +211,31 @@ theorem eliminateAndGatesWithPolarity_circuitSize_le {p : Nat}
       have h_children := eliminateAndGatesList_circuitSize_le true children
       cases negated with
       | false =>
-          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, if_false,
+          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, ite_false,
             circuitSize]
           omega
       | true =>
-          simp only [eliminateAndGatesWithPolarity, if_true, circuitSize]
+          simp only [eliminateAndGatesWithPolarity, ite_true, circuitSize]
           omega
   | .orGate children =>
       have h_children := eliminateAndGatesList_circuitSize_le false children
       cases negated with
       | false =>
-          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, if_false,
+          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, ite_false,
             circuitSize]
           omega
       | true =>
-          simp only [eliminateAndGatesWithPolarity, if_true, circuitSize]
+          simp only [eliminateAndGatesWithPolarity, ite_true, circuitSize]
           omega
   | .modGate children =>
       have h_children := eliminateAndGatesList_circuitSize_le false children
       cases negated with
       | false =>
-          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, if_false,
+          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, ite_false,
             circuitSize]
           omega
       | true =>
-          simp only [eliminateAndGatesWithPolarity, if_true, circuitSize]
+          simp only [eliminateAndGatesWithPolarity, ite_true, circuitSize]
           omega
 
 /-- The sum of circuit sizes grows by at most a factor of two under the list
@@ -274,30 +280,30 @@ theorem eliminateAndGatesWithPolarity_nodeCount_le {p : Nat}
       cases negated with
       | false =>
           simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true,
-            if_false, nodeCount]
+            ite_false, nodeCount]
           omega
       | true =>
-          simp only [eliminateAndGatesWithPolarity, if_true, nodeCount]
+          simp only [eliminateAndGatesWithPolarity, ite_true, nodeCount]
           omega
   | .orGate children =>
       have h_children := eliminateAndGatesList_nodeCount_le false children
       cases negated with
       | false =>
           simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true,
-            if_false, nodeCount]
+            ite_false, nodeCount]
           omega
       | true =>
-          simp only [eliminateAndGatesWithPolarity, if_true, nodeCount]
+          simp only [eliminateAndGatesWithPolarity, ite_true, nodeCount]
           omega
   | .modGate children =>
       have h_children := eliminateAndGatesList_nodeCount_le false children
       cases negated with
       | false =>
           simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true,
-            if_false, nodeCount]
+            ite_false, nodeCount]
           omega
       | true =>
-          simp only [eliminateAndGatesWithPolarity, if_true, nodeCount]
+          simp only [eliminateAndGatesWithPolarity, ite_true, nodeCount]
           omega
 
 /-- The sum of full node counts grows by at most a factor of two under the
@@ -367,28 +373,28 @@ theorem eliminateAndGatesWithPolarity_depth_le {p : Nat}
       have h_children := eliminateAndGatesList_depth_le true children
       cases negated with
       | false =>
-          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, if_false, depth]
+          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, ite_false, depth]
           omega
       | true =>
-          simp only [eliminateAndGatesWithPolarity, if_true, depth]
+          simp only [eliminateAndGatesWithPolarity, ite_true, depth]
           omega
   | .orGate children =>
       have h_children := eliminateAndGatesList_depth_le false children
       cases negated with
       | false =>
-          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, if_false, depth]
+          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, ite_false, depth]
           omega
       | true =>
-          simp only [eliminateAndGatesWithPolarity, if_true, depth]
+          simp only [eliminateAndGatesWithPolarity, ite_true, depth]
           omega
   | .modGate children =>
       have h_children := eliminateAndGatesList_depth_le false children
       cases negated with
       | false =>
-          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, if_false, depth]
+          simp only [eliminateAndGatesWithPolarity, Bool.false_eq_true, ite_false, depth]
           omega
       | true =>
-          simp only [eliminateAndGatesWithPolarity, if_true, depth]
+          simp only [eliminateAndGatesWithPolarity, ite_true, depth]
           omega
 
 /-- The maximum depth of a transformed formula list increases by at most a

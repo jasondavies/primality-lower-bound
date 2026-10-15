@@ -38,10 +38,10 @@ and declares no axioms. `#print axioms` on every main theorem shows only `propex
 
 ### Formalised Page estimate
 
-`pageEstimate : PageEstimate` (`PageProof.lean`) proves the paper's equation (1): uniformly
+`pageEstimate` (`PageProof.lean`) proves the paper's equation (1): uniformly
 for primes `p ≤ n` and `1 ≤ l < p`, the number of primes `q ≤ 2ⁿ` with `q ≡ l (mod p)` is
 asymptotic to `2ⁿ / (n (p − 1) ln 2)`. The threshold is independent of the modulus and residue.
-`PageEstimate.window` then gives the lower bound in `(2ⁿ, 2ⁿ⁺¹]` used by the primality reduction.
+`primesWindow_lower_bound` then gives the lower bound in `(2ⁿ, 2ⁿ⁺¹]` used by the primality reduction.
 
 The analytic input is the proved
 [`OAI.LargePrimeGaps.siegelWalfisz`](https://github.com/openai/math/blob/1581d4cbdd69a0faf34b2089614fe2a814316a6a/lean/OAI/NumberTheory/PrimeGaps/Main.lean).
@@ -60,27 +60,28 @@ on `propext`, `Classical.choice`, and `Quot.sound`; the main results are uncondi
 
 ### Formalised qualitative Smolensky theorem
 
-`smolenskyTheorem : SmolenskyTheorem` (`Smolensky.lean`) proves that, for distinct primes
-`p ≠ q`, `Mod_q` is not in AC⁰[Mod_p]. It uses the qualitative formula lower bound from
-[formalcs/circuit-complexity](https://github.com/formalcs/circuit-complexity/tree/8b1a1afd4a816edb0ed0716f20ec739ab2c033d9).
-The required 34 source modules are vendored with their Apache-2.0 license;
-[UPSTREAM.md](vendor/circuit-complexity/UPSTREAM.md) records the revision and compatibility edit.
+`smolenskyTheorem` (`Quantitative.lean`) proves that, for distinct primes `p ≠ q`,
+`Mod_q` is not in AC⁰[Mod_p]. It follows from `smolenskyExpTheorem`: a bound of
+`2^(n^δ)` eventually exceeds every polynomial size bound. The six qualitative
+`*_not_mem_ac0*_mod` theorems apply this result directly.
 
-The bridge translates PLB formulas to upstream ACC formulas, proves equality of evaluations
-and node counts, and bounds depth and input indices. It then applies the upstream lower bound
-and the existing DAG/formula equivalence. Its axiom dependencies are only `propext`,
-`Classical.choice` and `Quot.sound`. The six qualitative `*_not_mem_ac0*_mod` theorems
-apply this proof directly.
+The shared proof uses 32 source modules from
+[formalcs/circuit-complexity](https://github.com/formalcs/circuit-complexity/tree/8b1a1afd4a816edb0ed0716f20ec739ab2c033d9),
+vendored with their Apache-2.0 license.
+[UPSTREAM.md](vendor/circuit-complexity/UPSTREAM.md) records the revision, local proof
+adaptations and compatibility edits.
 
 ### Formalised quantitative Smolensky theorem
 
-`smolenskyExpTheorem : SmolenskyExpTheorem` (`Quantitative.lean`) proves the exponential
+`smolenskyExpTheorem` (`Quantitative.lean`) proves the exponential
 lower bound for individual DAG circuits, uniformly over all sufficiently large input lengths.
-`SmolenskyQuantitative.lean` extracts an explicit approximation for a single formula on
-`n ≥ 1` inputs, of size at most `B` with `n ≤ B`: degree `O((log B)^(8d+1))`, with error
+`Smolensky.lean` translates PLB formulas to upstream ACC formulas, preserving evaluation
+and node count and bounding depth. `SmolenskyQuantitative.lean` extracts an explicit
+approximation for a single formula on `n ≥ 1` inputs, of size at most `B` with `n ≤ B`:
+degree `O((log B)^(8d+1))`, with error
 on at most a `1/n` fraction of inputs.
-The upstream polynomial obstruction then gives size at least `2^t` on a polynomial sequence
-of input lengths. Zero-padding and interpolation extend this to all large lengths in
+The locally adapted polynomial obstruction then gives size at least `2^t` on a polynomial
+sequence of input lengths. Zero-padding and interpolation extend this to all large lengths in
 `smolensky_formula_exp_bound`. Unfolding DAGs into formulas gives `smolenskyExpTheorem`.
 The reductions for Corollary 2 apply the formula bound directly to the composed formula.
 
@@ -147,10 +148,11 @@ The remarks and open problems in Section 4 are not formalised. This includes the
 | `HittingSet.lean` | Adleman's argument as a hitting-set lemma |
 | `SquareFreeCount.lean`, `SquareFree.lean` | `mult ≤ᵀ Square-Free` |
 | `Adder.lean` | constant-depth adder |
-| `Page.lean` | statement of equation (1) and its window consequence |
-| `PageProof.lean` | proof of equation (1) from Siegel–Walfisz |
+| `Page.lean` | prime counts and dyadic windows |
+| `PageProof.lean` | proof of equation (1) and its window consequence from Siegel–Walfisz |
 | `Primes.lean` | `mult ≤ᵀ Primes` |
 | `Main.lean` | Theorem 1 and Corollary 2 |
-| `Smolensky.lean` | translation to upstream ACC formulas and qualitative Smolensky proof |
+| `Smolensky.lean` | translation to upstream ACC formulas |
 | `SmolenskyQuantitative.lean` | individual-formula approximation and quantitative polynomial obstruction |
-| `Quantitative.lean` | the exponential form of Corollary 2 |
+| `Asymptotics.lean` | shared polynomial versus stretched-exponential estimates |
+| `Quantitative.lean` | quantitative and qualitative Smolensky; exponential Corollary 2 |

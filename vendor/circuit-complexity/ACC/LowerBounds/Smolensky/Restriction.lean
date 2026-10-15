@@ -1,6 +1,12 @@
+/-
+Local compatibility changes for Lean/Mathlib 4.34.0: updated deprecated syntax
+and cleaned up proof warnings. Removed the unused polylogarithmic asymptotics
+import.
+See the package UPSTREAM.md for provenance and the modification list.
+-/
+
 import ACC.LowerBounds.PolynomialMod
 import ACC.Simulation.PolynomialApproximation
-import ACC.Asymptotics.Polylogarithmic
 
 namespace Circuits.ACC
 
@@ -199,8 +205,8 @@ theorem monomial_residueExtension
           residueExtension_apply, mul_assoc, mul_comm]
       · have hge : n ≤ a.val := Nat.le_of_not_gt hhead
         rw [Finset.prod_insert ha, headSupport_insert_of_ge hge, ih]
-        simp only [suffixValue, Finset.prod_insert ha, hge, if_true]
-        rw [residueExtension_apply, dif_neg hhead]
+        simp only [suffixValue, Finset.prod_insert ha, hge, ite_true]
+        rw [residueExtension_apply, dite_eq_right hhead]
         push_cast
         ring
 
@@ -283,11 +289,11 @@ private theorem degreeOf_squarefreeProduct
         simpa using hadd
       · by_cases hvs : v ∈ s
         · rw [MvPolynomial.degreeOf_X]
-          simp only [hva, if_false, zero_add, Finset.mem_insert, hvs,
-            or_true, if_true]
+          simp only [hva, ite_false, zero_add, Finset.mem_insert, hvs,
+            or_true, ite_true]
           simpa [hvs] using ih
         · rw [MvPolynomial.degreeOf_X]
-          simp only [hva, if_false, zero_add, Finset.mem_insert, hvs,
+          simp only [hva, ite_false, zero_add, Finset.mem_insert, hvs,
             or_false]
           simpa [hvs] using ih
 

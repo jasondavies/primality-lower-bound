@@ -1,1 +1,1 @@
-import PrimalityLowerBound.Quantitative
+import PrimalityLowerBound.Main

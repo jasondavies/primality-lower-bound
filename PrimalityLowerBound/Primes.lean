@@ -109,7 +109,7 @@ lemma window_card_le {m p x : ℕ} (hp : 0 < p) (hx : x < 2 ^ m) :
 
 /-- **Lemma 5.2.** `mult ≤ᵀ Primes`, using the proved Page estimate. -/
 theorem mult_reduces_primes : mult ≤ᵀ Primes := by
-  obtain ⟨N₀, hN₀⟩ := pageEstimate.window
+  obtain ⟨N₀, hN₀⟩ := primesWindow_lower_bound
   refine mult_reduces_of 10 45 (N₀ + 1) fun m hm j hj1 hjm => ?_
   set p := oddPrime j
   have hp : p.Prime := oddPrime_prime j

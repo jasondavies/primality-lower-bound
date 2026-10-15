@@ -291,4 +291,26 @@ theorem maj_reduces_mult : Maj ≤ᵀ mult :=
   ⟨4, 16, fun n => ⟨majCircuit n, depth_majCircuit_le n, size_majCircuit_le n,
     eval_majCircuit n⟩⟩
 
+/-- `Mod_{p_j} ≤ᵀ mult`: a single `mult` gate (the gadget `M_{j,0}` of Lemma 4). -/
+theorem modLang_reduces_mult {j : ℕ} (hj : 1 ≤ j) : ModLang (oddPrime j) ≤ᵀ mult := by
+  refine Reduces.of_eventually 2 12 j fun n hn => ⟨resGate n j 0, depth_resGate_le n j 0, ?_, ?_⟩
+  · refine (size_resGate_le n j 0).trans ?_
+    have := resLen_le (n := n) (j := j) (r := 0) (by omega)
+    have h1 : 1 ≤ (n + 2) ^ 11 := Nat.one_le_pow _ _ (by omega)
+    calc 2 * resLen n j 0 + 1 ≤ 3 * (n + 2) ^ 11 := by omega
+      _ ≤ (n + 2) * (n + 2) ^ 11 := Nat.mul_le_mul_right _ (by omega)
+      _ = (n + 2) ^ 12 := by ring
+  · intro z
+    rw [eval_resGate n j 0 hj (oddPrime_prime j).pos, ModLang, decide_eq_decide,
+      Nat.dvd_iff_mod_eq_zero]
+
+/-- For every prime `p` there is an odd prime `q ≠ p` with `Mod_q ≤ᵀ mult`. -/
+lemma exists_modLang_reduces_mult (p : ℕ) :
+    ∃ q, q.Prime ∧ q ≠ p ∧ ModLang q ≤ᵀ mult := by
+  by_cases hp : p = 3
+  · refine ⟨5, by norm_num, by omega, ?_⟩
+    rw [← oddPrime_two]; exact modLang_reduces_mult (by norm_num)
+  · refine ⟨3, by norm_num, Ne.symm hp, ?_⟩
+    rw [← oddPrime_one]; exact modLang_reduces_mult (by norm_num)
+
 end PLB

@@ -1,3 +1,9 @@
+/-
+Local compatibility changes for Lean/Mathlib 4.34.0: updated deprecated syntax
+and cleaned up proof warnings.
+See the package UPSTREAM.md for provenance and the modification list.
+-/
+
 import Mathlib.Data.Nat.Log
 import ACC.Formula.Transform.AndNotElimination
 import ACC.Formula.Probabilistic.Properties
@@ -793,7 +799,7 @@ theorem randomModTests_all_true_card_le {p : Nat} (hp : 1 < p)
             (h_lower.trans h_next_le_after) h_formulas_after h_nonzero_after
           rw [h_tests] at h_tail_bound
           by_cases h_head : leftProperty mask
-          · simp only [h_head, if_true]
+          · simp only [h_head, ite_true]
             apply Nat.le_trans (Finset.card_le_card ?_) h_tail_bound
             intro tailAssignment h_tailAssignment
             simp only [Finset.mem_filter, Finset.mem_univ, true_and]
@@ -801,7 +807,7 @@ theorem randomModTests_all_true_card_le {p : Nat} (hp : 1 < p)
             intro output h_output
             have h_all := h_tailAssignment output (by simp [h_output])
             simpa [property, afterMask, ofFn_append, List.append_assoc] using h_all
-          · simp only [h_head, if_false, Nat.le_zero]
+          · simp only [h_head, ite_false, Nat.le_zero]
             rw [Finset.card_filter_eq_zero_iff]
             intro tailAssignment _ h_tailAssignment
             have h_head_full := h_tailAssignment test (by simp)

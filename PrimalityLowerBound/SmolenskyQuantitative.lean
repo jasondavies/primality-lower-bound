@@ -1,4 +1,6 @@
 import PrimalityLowerBound.Smolensky
+import PrimalityLowerBound.Asymptotics
+import ACC.LowerBounds.Smolensky.Restriction
 
 /-!
 # Quantitative Smolensky lower bounds
@@ -216,23 +218,6 @@ theorem obstruction (p r : ℕ) (hp : p.Prime) (hr : 1 < r) (hcop : r.Coprime p)
     omega
   exact (not_lt_of_ge hlowerBound) hupper
 
-private lemma eventually_power_le_exp (c : ℕ) :
-    ∀ᶠ t : ℕ in Filter.atTop, (t + 2) ^ c ≤ 2 ^ t := by
-  have h := (isLittleO_pow_const_const_pow_of_one_lt (R := ℝ) c
-    (r := 2) (by norm_num)).bound (c := ((3 : ℝ) ^ c)⁻¹) (by positivity)
-  filter_upwards [h, Filter.eventually_ge_atTop 1] with t ht ht1
-  have ht' : (t : ℝ) ^ c ≤ ((3 : ℝ) ^ c)⁻¹ * 2 ^ t := by simpa using ht
-  have hreal : (((t + 2 : ℕ) : ℝ)) ^ c ≤ (2 : ℝ) ^ t := by
-    calc
-      _ ≤ (3 * (t : ℝ)) ^ c := by
-        gcongr
-        have : (1 : ℝ) ≤ t := by exact_mod_cast ht1
-        push_cast; linarith
-      _ = (3 : ℝ) ^ c * (t : ℝ) ^ c := mul_pow _ _ _
-      _ ≤ (3 : ℝ) ^ c * (((3 : ℝ) ^ c)⁻¹ * 2 ^ t) := by gcongr
-      _ = 2 ^ t := by field_simp
-  exact_mod_cast hreal
-
 private lemma degree_square_bound (K e r t : ℕ) (ht : K ^ 2 + r ≤ t) :
     (K * (t + 1) ^ e) ^ 2 + r ≤ (t + 2) ^ (2 * e + 2) := by
   have hA : 1 ≤ (t + 2) ^ (2 * e) := Nat.one_le_pow _ _ (by omega)
@@ -256,7 +241,12 @@ theorem power_lower_bound (p r d : ℕ) (hp : p.Prime) (hr : 1 < r)
   let K := degreeCoefficient p d
   let e := simulationOrderExponent d
   let c := 2 * e + 2
-  obtain ⟨t₁, ht₁⟩ := Filter.eventually_atTop.1 (eventually_power_le_exp c)
+  have hevent : ∀ᶠ t : ℕ in Filter.atTop, (t + 2) ^ c ≤ 2 ^ t := by
+    filter_upwards [eventually_pow_add_le_exp c 2 (by norm_num : (0 : ℝ) < 1)
+      (by norm_num : (0 : ℝ) < 1)] with t ht
+    simp only [Real.rpow_one, one_mul, Real.rpow_natCast] at ht
+    exact_mod_cast ht
+  obtain ⟨t₁, ht₁⟩ := Filter.eventually_atTop.1 hevent
   refine ⟨c, by omega, max t₁ (n₀ + r + K ^ 2 + r + 1), ?_⟩
   intro t ht C hCd hCe
   by_contra hsmall
