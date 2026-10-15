@@ -1,4 +1,4 @@
-import PrimalityLowerBound.Smolensky
+import PrimalityLowerBound.ACCTranslation
 import PrimalityLowerBound.Asymptotics
 import ACC.LowerBounds.Smolensky.Restriction
 
@@ -241,12 +241,7 @@ theorem power_lower_bound (p r d : ℕ) (hp : p.Prime) (hr : 1 < r)
   let K := degreeCoefficient p d
   let e := simulationOrderExponent d
   let c := 2 * e + 2
-  have hevent : ∀ᶠ t : ℕ in Filter.atTop, (t + 2) ^ c ≤ 2 ^ t := by
-    filter_upwards [eventually_pow_add_le_exp c 2 (by norm_num : (0 : ℝ) < 1)
-      (by norm_num : (0 : ℝ) < 1)] with t ht
-    simp only [Real.rpow_one, one_mul, Real.rpow_natCast] at ht
-    exact_mod_cast ht
-  obtain ⟨t₁, ht₁⟩ := Filter.eventually_atTop.1 hevent
+  obtain ⟨t₁, ht₁⟩ := Filter.eventually_atTop.1 (eventually_nat_pow_add_le_exp c 2)
   refine ⟨c, by omega, max t₁ (n₀ + r + K ^ 2 + r + 1), ?_⟩
   intro t ht C hCd hCe
   by_contra hsmall

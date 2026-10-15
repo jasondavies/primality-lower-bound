@@ -6,11 +6,12 @@ import PrimalityLowerBound.Primes
 import PrimalityLowerBound.SmolenskyQuantitative
 
 /-!
-# Corollary 2, quantitative form
+# Smolensky lower bounds and quantitative Corollary 2
 
-We prove quantitative Smolensky from the explicit formula approximation bounds. Consequently,
-bounded-depth circuits with `Mod_p` gates for `Primes`, `GCD` or `Square-Free` need size
-`2^(N^δ)` for some `δ > 0`. Page and quantitative Smolensky are both proved.
+The explicit formula approximation bounds give `smolenskyExpTheorem`, the quantitative
+Smolensky theorem, and its qualitative consequence `smolenskyTheorem`. Transferring the
+formula bound along reductions gives size `2^(N^δ)` for some `δ > 0` for bounded-depth
+circuits with `Mod_p` gates for `Primes`, `GCD` or `Square-Free` (at valid input lengths).
 
 The argument: a circuit for the language on `N` input bits also decides it on fewer bits (by
 padding), so composing the reduction `Mod_q ≤ᵀ mult ≤ᵀ A` with it yields a circuit for `Mod_q`
@@ -168,10 +169,7 @@ lemma asymptotic_core_mul (c a E n₀ : ℕ) (hc : 1 ≤ c) {δ : ℝ} (hδ : 0 
   refine ⟨γ / 2, by positivity, ?_⟩
   have hA := (tendsto_rpow_atTop (inv_pos.2 hcr)).eventually_ge_atTop ((n₀ : ℝ) + 6)
   have hC := (tendsto_rpow_atTop (half_pos hγ)).eventually_ge_atTop (4 * (E' : ℝ) + 1)
-  have hpoly : ∀ᶠ N : ℕ in Filter.atTop,
-      (N : ℝ) ^ a ≤ (2 : ℝ) ^ ((N : ℝ) ^ γ / 4) := by
-    simpa [div_eq_mul_inv, mul_comm] using
-      eventually_pow_le_exp a hγ (by norm_num : (0 : ℝ) < 1 / 4)
+  have hpoly := eventually_pow_le_exp a hγ (by norm_num : (0 : ℝ) < 1 / 4)
   obtain ⟨N₀, hN₀⟩ := Filter.eventually_atTop.1
     ((tendsto_natCast_atTop_atTop.eventually (hA.and hC)).and hpoly)
   refine ⟨max N₀ 1, fun N hN S hS => ?_⟩
@@ -223,9 +221,9 @@ lemma asymptotic_core_mul (c a E n₀ : ℕ) (hc : 1 ≤ c) {δ : ℝ} (hδ : 0 
     have : (0 : ℝ) ≤ S := by positivity
     linarith
   have hpowE : ((S : ℝ) + 2) ^ E ≤ ((S : ℝ) + 2) ^ E' := pow_le_pow_right₀ hS2 (by omega)
-  have hbig : (2 : ℝ) ^ ((N : ℝ) ^ γ / 4) ≤ ((S : ℝ) + 2) ^ E' := by
+  have hbig : (2 : ℝ) ^ ((1 / 4 : ℝ) * (N : ℝ) ^ γ) ≤ ((S : ℝ) + 2) ^ E' := by
     have e1 : (2 : ℝ) ^ ((N : ℝ) ^ γ / 2) =
-        (2 : ℝ) ^ ((N : ℝ) ^ γ / 4) * (2 : ℝ) ^ ((N : ℝ) ^ γ / 4) := by
+        (2 : ℝ) ^ ((1 / 4 : ℝ) * (N : ℝ) ^ γ) * (2 : ℝ) ^ ((1 / 4 : ℝ) * (N : ℝ) ^ γ) := by
       rw [← Real.rpow_add (by norm_num)]; ring_nf
     have e2 : (2 : ℝ) ^ ((N : ℝ) ^ γ / 2) ≤ (2 : ℝ) ^ ((n : ℝ) ^ δ) :=
       Real.rpow_le_rpow_of_exponent_le (by norm_num) hnδ
@@ -235,29 +233,29 @@ lemma asymptotic_core_mul (c a E n₀ : ℕ) (hc : 1 ≤ c) {δ : ℝ} (hδ : 0 
         _ ≤ (m : ℝ) ^ c := pow_le_pow_right₀ hm1 hc
         _ ≤ N := hmc
     have e3 : (m : ℝ) ^ a * ((S : ℝ) + 2) ^ E ≤
-        (2 : ℝ) ^ ((N : ℝ) ^ γ / 4) * ((S : ℝ) + 2) ^ E' := by
+        (2 : ℝ) ^ ((1 / 4 : ℝ) * (N : ℝ) ^ γ) * ((S : ℝ) + 2) ^ E' := by
       exact mul_le_mul ((pow_le_pow_left₀ (by positivity) hmN a).trans hpolyN)
         hpowE (by positivity) (by positivity)
-    have hpos : (0 : ℝ) < (2 : ℝ) ^ ((N : ℝ) ^ γ / 4) := by positivity
+    have hpos : (0 : ℝ) < (2 : ℝ) ^ ((1 / 4 : ℝ) * (N : ℝ) ^ γ) := by positivity
     have := e2.trans (key.trans e3)
     rw [e1] at this
     exact le_of_mul_le_mul_left this hpos
   -- `S + 2 ≥ 2 ^ (N^γ / (4 E'))`
   have hE'pos : (0 : ℝ) < E' := by positivity
-  have hroot : (2 : ℝ) ^ ((N : ℝ) ^ γ / 4 / E') ≤ (S : ℝ) + 2 := by
+  have hroot : (2 : ℝ) ^ ((1 / 4 : ℝ) * (N : ℝ) ^ γ / E') ≤ (S : ℝ) + 2 := by
     by_contra hlt
     push Not at hlt
-    have : ((S : ℝ) + 2) ^ E' < ((2 : ℝ) ^ ((N : ℝ) ^ γ / 4 / E')) ^ E' :=
+    have : ((S : ℝ) + 2) ^ E' < ((2 : ℝ) ^ ((1 / 4 : ℝ) * (N : ℝ) ^ γ / E')) ^ E' :=
       pow_lt_pow_left₀ hlt (by positivity) (by omega)
-    have e : ((2 : ℝ) ^ ((N : ℝ) ^ γ / 4 / E')) ^ E' = (2 : ℝ) ^ ((N : ℝ) ^ γ / 4) := by
+    have e : ((2 : ℝ) ^ ((1 / 4 : ℝ) * (N : ℝ) ^ γ / E')) ^ E' = (2 : ℝ) ^ ((1 / 4 : ℝ) * (N : ℝ) ^ γ) := by
       rw [← Real.rpow_natCast, ← Real.rpow_mul (by norm_num), div_mul_cancel₀ _ hE'pos.ne']
     rw [e] at this
     linarith
   -- `N^γ / (4 E') ≥ t + 1`
   have htt : (N : ℝ) ^ γ = t ^ 2 := by
     rw [ht, ← Real.rpow_natCast, ← Real.rpow_mul hN0]; congr 1; push_cast; ring
-  have ht1 : t + 1 ≤ (N : ℝ) ^ γ / 4 / E' := by
-    rw [htt, div_div, le_div_iff₀ (by positivity)]
+  have ht1 : t + 1 ≤ (1 / 4 : ℝ) * (N : ℝ) ^ γ / E' := by
+    rw [htt, le_div_iff₀ (by positivity)]
     nlinarith
   have hfin : (2 : ℝ) ^ (t + 1) ≤ (S : ℝ) + 2 :=
     (Real.rpow_le_rpow_of_exponent_le (by norm_num) ht1).trans hroot
@@ -319,17 +317,20 @@ theorem smolenskyExpTheorem :
     (fun x => by rw [DAG.eval_toCircuit, hDe]) D.size
   exact D.toCircuit_bounds.1.trans (Nat.pow_le_pow_right (by omega) (by omega))
 
-/-- Qualitative Smolensky follows because the quantitative lower bound eventually
-exceeds every polynomial size bound. -/
-theorem smolenskyTheorem (p q : ℕ) (hp : p.Prime) (hq : q.Prime) (hpq : p ≠ q) :
-    ModLang q ∉ AC0DAG (ModLang p) := by
+/-- Exponential lower bounds on arbitrarily large valid lengths exclude polynomial-size,
+bounded-depth DAG families. -/
+theorem not_mem_ac0DAG_of_exp_lower_bound {A L : Lang} (V : ℕ → Prop)
+    (hV : ∀ n, ∃ N ≥ n, V N)
+    (hbound : ∀ d : ℕ, ∃ δ : ℝ, 0 < δ ∧ ∃ N₀ : ℕ, ∀ N ≥ N₀, V N →
+      ∀ D : DAG N, D.depth ≤ d → (∀ x, D.eval L x = A N x) →
+        (2 : ℝ) ^ ((N : ℝ) ^ δ) ≤ D.size) : A ∉ AC0DAG L := by
   rintro ⟨d, c, h⟩
-  obtain ⟨δ, hδ, n₀, hlow⟩ := smolenskyExpTheorem p q hp hq hpq d
+  obtain ⟨δ, hδ, n₀, hlow⟩ := hbound d
   obtain ⟨n₁, hn₁⟩ := Filter.eventually_atTop.1
     (eventually_pow_add_le_exp c 2 hδ (by norm_num : (0 : ℝ) < 1 / 2))
-  let n := max (max n₀ n₁) 1
+  obtain ⟨n, hn, hvalid⟩ := hV (max (max n₀ n₁) 1)
   obtain ⟨D, hDd, hDs, hDe⟩ := h n
-  have hlower := hlow n (by omega) D hDd hDe
+  have hlower := hlow n (by omega) hvalid D hDd hDe
   have hupper : (D.size : ℝ) ≤ (2 : ℝ) ^ ((1 / 2 : ℝ) * (n : ℝ) ^ δ) :=
     (show (D.size : ℝ) ≤ ((n : ℝ) + 2) ^ c by exact_mod_cast hDs).trans
       (hn₁ n (by omega))
@@ -339,6 +340,13 @@ theorem smolenskyTheorem (p q : ℕ) (hp : p.Prime) (hq : q.Prime) (hpq : p ≠ 
     apply Real.rpow_lt_rpow_of_exponent_lt (by norm_num)
     nlinarith [Real.rpow_pos_of_pos hnpos δ]
   exact (not_lt_of_ge hlower) (hupper.trans_lt hstrict)
+
+/-- Qualitative Smolensky follows because the quantitative lower bound eventually
+exceeds every polynomial size bound. -/
+theorem smolenskyTheorem (p q : ℕ) (hp : p.Prime) (hq : q.Prime) (hpq : p ≠ q) :
+    ModLang q ∉ AC0DAG (ModLang p) := by
+  apply not_mem_ac0DAG_of_exp_lower_bound (fun _ => True) (fun n => ⟨n, le_rfl, trivial⟩)
+  simpa using smolenskyExpTheorem p q hp hq hpq
 
 /-- If `mult ≤ᵀ A` and `A` on shorter (valid) lengths is a projection of `A` on longer valid
 lengths, then bounded-depth `Mod_p` circuits for `A` need size `2^(N^δ)`. -/

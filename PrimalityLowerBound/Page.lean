@@ -41,5 +41,4 @@ lemma primesAP_succ_eq (n p l : ℕ) :
     simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_Ioc] at h1 h2
     omega
 
-
 end PLB

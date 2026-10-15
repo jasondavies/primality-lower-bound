@@ -1,10 +1,11 @@
 import PrimalityLowerBound.Languages
 
 /-!
-# Lemma 4: `Maj ≤ᵀ mult`
+# Lemma 4: `Maj ≤ᵀ mult` and modular-counting reductions
 
 Chinese remaindering plus the observation of Boppana and Lagarias: spreading the bits of `x`
 `u = p - 1` positions apart gives a number congruent to the number of ones of `x` modulo `p`.
+The residue gadget also gives `Mod_{p_j} ≤ᵀ mult` for every odd prime `p_j`, with `j ≥ 1`.
 
 Deviation from the paper: instead of computing `f_j(x) - r` (which needs a subtractor and may be
 negative) we append `p_j - r` ones to `x`, which is pure wiring.

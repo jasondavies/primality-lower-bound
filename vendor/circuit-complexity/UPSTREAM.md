@@ -4,7 +4,7 @@ at commit `8b1a1afd4a816edb0ed0716f20ec739ab2c033d9`.
 The 32 included modules are distributed under the included Apache-2.0 license.
 They supply formula semantics, normalization, simulation, polynomial approximation
 and the low-degree disagreement theorem used by the PLB Smolensky proof.
-`PrimalityLowerBound/Smolensky.lean` translates PLB formulas to upstream formulas.
+`PrimalityLowerBound/ACCTranslation.lean` translates PLB formulas to upstream formulas.
 `PrimalityLowerBound/SmolenskyQuantitative.lean` uses the internal approximation APIs
 and adapts the residue-counting argument from upstream
 [`ACC/LowerBounds/Smolensky/Formula.lean`](https://github.com/formalcs/circuit-complexity/blob/8b1a1afd4a816edb0ed0716f20ec739ab2c033d9/ACC/LowerBounds/Smolensky/Formula.lean)

@@ -12,7 +12,6 @@ namespace PLB
 coefficient in the exponent. -/
 lemma eventually_pow_le_exp (a : ℕ) {γ ε : ℝ} (hγ : 0 < γ) (hε : 0 < ε) :
     ∀ᶠ N : ℕ in Filter.atTop, (N : ℝ) ^ a ≤ (2 : ℝ) ^ (ε * (N : ℝ) ^ γ) := by
-  have hl2 : 0 < Real.log 2 := Real.log_pos (by norm_num)
   have h1 := (isLittleO_log_rpow_atTop hγ).bound
     (c := ε * Real.log 2 / ((a : ℝ) + 1)) (by positivity)
   filter_upwards [tendsto_natCast_atTop_atTop.eventually
@@ -48,5 +47,13 @@ lemma eventually_pow_add_le_exp (a b : ℕ) {γ ε : ℝ} (hγ : 0 < γ) (hε : 
     _ ≤ (N : ℝ) ^ a * N := mul_le_mul_of_nonneg_left hlarge' (by positivity)
     _ = (N : ℝ) ^ (a + 1) := (pow_succ _ _).symm
     _ ≤ _ := hN
+
+/-- A shifted natural-number power is eventually bounded by `2^N`. -/
+lemma eventually_nat_pow_add_le_exp (a b : ℕ) :
+    ∀ᶠ N : ℕ in Filter.atTop, (N + b) ^ a ≤ 2 ^ N := by
+  filter_upwards [eventually_pow_add_le_exp a b (by norm_num : (0 : ℝ) < 1)
+    (by norm_num : (0 : ℝ) < 1)] with N hN
+  simp only [Real.rpow_one, one_mul, Real.rpow_natCast] at hN
+  exact_mod_cast hN
 
 end PLB

@@ -63,7 +63,8 @@ on `propext`, `Classical.choice`, and `Quot.sound`; the main results are uncondi
 `smolenskyTheorem` (`Quantitative.lean`) proves that, for distinct primes `p ≠ q`,
 `Mod_q` is not in AC⁰[Mod_p]. It follows from `smolenskyExpTheorem`: a bound of
 `2^(n^δ)` eventually exceeds every polynomial size bound. The six qualitative
-`*_not_mem_ac0*_mod` theorems apply this result directly.
+`*_not_mem_ac0*_mod` theorems follow from the corresponding exponential bounds
+for Primes, GCD and Square-Free.
 
 The shared proof uses 32 source modules from
 [formalcs/circuit-complexity](https://github.com/formalcs/circuit-complexity/tree/8b1a1afd4a816edb0ed0716f20ec739ab2c033d9),
@@ -75,7 +76,7 @@ adaptations and compatibility edits.
 
 `smolenskyExpTheorem` (`Quantitative.lean`) proves the exponential
 lower bound for individual DAG circuits, uniformly over all sufficiently large input lengths.
-`Smolensky.lean` translates PLB formulas to upstream ACC formulas, preserving evaluation
+`ACCTranslation.lean` translates PLB formulas to upstream ACC formulas, preserving evaluation
 and node count and bounding depth. `SmolenskyQuantitative.lean` extracts an explicit
 approximation for a single formula on `n ≥ 1` inputs, of size at most `B` with `n ≤ B`:
 degree `O((log B)^(8d+1))`, with error
@@ -142,7 +143,7 @@ The remarks and open problems in Section 4 are not formalised. This includes the
 | `Bits.lean` | values of bit strings |
 | `Languages.lean` | `Maj`, `Mod_k`, `Primes`, `Square-Free`, `GCD`, `mult`, `TC⁰`, `p_j` |
 | `NthPrime.lean` | `p_j ≤ 8 (j+1)²` |
-| `Lemma4.lean` | `Maj ≤ᵀ mult` |
+| `Lemma4.lean` | `Maj ≤ᵀ mult` and the `Mod_{p_j} ≤ᵀ mult` gadget |
 | `MultWrapper.lean` | building `mult` circuits from tests for divisibility by `p_j` |
 | `GCD.lean` | `mult ≤ᵀ GCD` |
 | `HittingSet.lean` | Adleman's argument as a hitting-set lemma |
@@ -152,7 +153,7 @@ The remarks and open problems in Section 4 are not formalised. This includes the
 | `PageProof.lean` | proof of equation (1) and its window consequence from Siegel–Walfisz |
 | `Primes.lean` | `mult ≤ᵀ Primes` |
 | `Main.lean` | Theorem 1 and Corollary 2 |
-| `Smolensky.lean` | translation to upstream ACC formulas |
+| `ACCTranslation.lean` | translation to upstream ACC formulas |
 | `SmolenskyQuantitative.lean` | individual-formula approximation and quantitative polynomial obstruction |
 | `Asymptotics.lean` | shared polynomial versus stretched-exponential estimates |
 | `Quantitative.lean` | quantitative and qualitative Smolensky; exponential Corollary 2 |
