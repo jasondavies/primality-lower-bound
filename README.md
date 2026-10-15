@@ -126,7 +126,8 @@ The statements follow the paper. Some proofs were changed to make them simpler t
   size, which counts gates plus wires. Wires must be counted so that one gate cannot read an
   input many times for free. A circuit with `g` gates on `N` inputs and no repeated wires has
   at most `g (g + N)` wires. So a size bound of `2^(N^δ)` still forces at least
-  `2^(N^δ / 2) − N − 1` gates, which is exponential in the gate count.
+  `2^(N^δ / 2) − N − 1` gates, a stretched-exponential lower bound on the number of gates
+  in terms of the input length `N`.
 
 The remarks and open problems in Section 4 are not formalised. This includes the parity of
 `ω(x)`.
