@@ -1,10 +1,10 @@
 import PrimalityLowerBound.MultWrapper
 import PrimalityLowerBound.HittingSet
 import PrimalityLowerBound.Adder
-import PrimalityLowerBound.Page
+import PrimalityLowerBound.PageProof
 
 /-!
-# Lemma 5.2: `mult ≤ᵀ Primes` (assuming equation (1))
+# Lemma 5.2: `mult ≤ᵀ Primes`
 
 Test whether `p ∣ x` by asking whether `x + p y` is prime for a few advice values `y ≥ 2`:
 if `p ∣ x` then `x + p y` is a proper multiple of `p`; otherwise, by equation (1), a
@@ -107,9 +107,9 @@ lemma window_card_le {m p x : ℕ} (hp : 0 < p) (hx : x < 2 ^ m) :
     rw [heq] at h1
     omega
 
-/-- **Lemma 5.2.** Assuming equation (1) (Page's theorem), `mult ≤ᵀ Primes`. -/
-theorem mult_reduces_primes (hP : PageEstimate) : mult ≤ᵀ Primes := by
-  obtain ⟨N₀, hN₀⟩ := hP.window
+/-- **Lemma 5.2.** `mult ≤ᵀ Primes`, using the proved Page estimate. -/
+theorem mult_reduces_primes : mult ≤ᵀ Primes := by
+  obtain ⟨N₀, hN₀⟩ := pageEstimate.window
   refine mult_reduces_of 10 45 (N₀ + 1) fun m hm j hj1 hjm => ?_
   set p := oddPrime j
   have hp : p.Prime := oddPrime_prime j

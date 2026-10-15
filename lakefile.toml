@@ -16,3 +16,7 @@ name = "PrimalityLowerBound"
 [[require]]
 name = "smolensky"
 path = "vendor/circuit-complexity"
+
+[[require]]
+name = "page_analytic"
+path = "vendor/openai-math"

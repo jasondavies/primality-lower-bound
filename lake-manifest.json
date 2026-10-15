@@ -3,6 +3,13 @@
  "packages":
  [{"type": "path",
    "scope": "",
+   "name": "page_analytic",
+   "manifestFile": "lake-manifest.json",
+   "inherited": false,
+   "dir": "vendor/openai-math",
+   "configFile": "lakefile.toml"},
+  {"type": "path",
+   "scope": "",
    "name": "smolensky",
    "manifestFile": "lake-manifest.json",
    "inherited": false,

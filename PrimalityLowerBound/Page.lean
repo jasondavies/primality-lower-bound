@@ -6,8 +6,8 @@ import Mathlib
 The paper uses the following consequence of Page's theorem [P35] (see also Prachar [P57]):
 uniformly for primes `p ≤ n` and `1 ≤ l < p`,
 `π(2ⁿ, p, l) ∼ 2ⁿ / (n (p - 1) ln 2)`.
-This is a deep analytic fact (a Siegel–Walfisz-type estimate) that is not available in Mathlib.
-We state it as the hypothesis `PageEstimate` and derive from it the lower bound actually used.
+We state the estimate as `PageEstimate` and derive the lower bound used by the reduction.
+`PageProof.lean` proves `pageEstimate : PageEstimate` from a vendored Siegel–Walfisz theorem.
 -/
 
 namespace PLB

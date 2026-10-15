@@ -27,34 +27,39 @@ and declares no axioms. `#print axioms` on every main theorem shows only `propex
 |---|---|---|
 | Lemma 4: `Maj ≤ᵀ mult` | `maj_reduces_mult` | none |
 | Lemma 5.1: `mult ≤ᵀ GCD` | `mult_reduces_gcd` | none |
-| Lemma 5.2: `mult ≤ᵀ Primes` | `mult_reduces_primes` | `PageEstimate` |
+| Lemma 5.2: `mult ≤ᵀ Primes` | `mult_reduces_primes` | none |
 | Lemma 5.3: `mult ≤ᵀ Square-Free` | `mult_reduces_squarefree` | none |
 | Theorem 1: `TC⁰ ⊆ AC⁰[GCD]` | `tc0_subset_ac0_gcd`, `tc0DAG_subset_ac0DAG_gcd` | none |
 | Theorem 1: `TC⁰ ⊆ AC⁰[Square-Free]` | `tc0_subset_ac0_squarefree`, `tc0DAG_subset_ac0DAG_squarefree` | none |
-| Theorem 1: `TC⁰ ⊆ AC⁰[Primes]` | `tc0_subset_ac0_primes`, `tc0DAG_subset_ac0DAG_primes` | `PageEstimate` |
+| Theorem 1: `TC⁰ ⊆ AC⁰[Primes]` | `tc0_subset_ac0_primes`, `tc0DAG_subset_ac0DAG_primes` | none |
 | Corollary 2: GCD and Square-Free not in `AC⁰[p]` | `gcd_not_mem_ac0DAG_mod`, `squarefree_not_mem_ac0DAG_mod` | none |
-| Corollary 2: Primes not in `AC⁰[p]` | `primes_not_mem_ac0DAG_mod` | `PageEstimate` |
+| Corollary 2: Primes not in `AC⁰[p]` | `primes_not_mem_ac0DAG_mod` | none |
 | Corollary 2: GCD and Square-Free size `≥ 2^(N^δ)` | `gcd_exp_lower_bound`, `squarefree_exp_lower_bound` | none |
-| Corollary 2: Primes size `≥ 2^(N^δ)` | `primes_exp_lower_bound` | `PageEstimate` |
+| Corollary 2: Primes size `≥ 2^(N^δ)` | `primes_exp_lower_bound` | none |
 | Transitivity of `≤ᵀ` | `Reduces.trans` | none |
 
-### External theorems used as hypotheses
+### Formalised Page estimate
 
-Only `PageEstimate` remains an external theorem hypothesis, stated as a `Prop`, never an axiom:
+`pageEstimate : PageEstimate` (`PageProof.lean`) proves the paper's equation (1): uniformly
+for primes `p ≤ n` and `1 ≤ l < p`, the number of primes `q ≤ 2ⁿ` with `q ≡ l (mod p)` is
+asymptotic to `2ⁿ / (n (p − 1) ln 2)`. The threshold is independent of the modulus and residue.
+`PageEstimate.window` then gives the lower bound in `(2ⁿ, 2ⁿ⁺¹]` used by the primality reduction.
 
-- **`PageEstimate`** (`Page.lean`) is the paper's equation (1). It says that, uniformly for
-  primes `p ≤ n` and `1 ≤ l < p`, the number of primes `q ≤ 2ⁿ` with `q ≡ l (mod p)` is
-  asymptotic to `2ⁿ / (n (p − 1) ln 2)`. This follows from Page's theorem or the
-  Siegel–Walfisz theorem. From it we derive the only consequence the proof uses:
-  `PageEstimate.window` gives a lower bound on primes in a residue class in `(2ⁿ, 2ⁿ⁺¹]`.
+The analytic input is the proved
+[`OAI.LargePrimeGaps.siegelWalfisz`](https://github.com/openai/math/blob/1581d4cbdd69a0faf34b2089614fe2a814316a6a/lean/OAI/NumberTheory/PrimeGaps/Main.lean).
+Its 48-module dependency closure is vendored unchanged, with its Apache-2.0 license and
+[provenance](vendor/openai-math/UPSTREAM.md), and builds against this project's pinned
+Lean 4.34.0 and Mathlib.
 
-Proving this hypothesis remains unfinished. The inspected
-[PNT project at revision c39a751](https://github.com/AlexKontorovich/PrimeNumberTheoremAnd/blob/c39a751132c88b6e8080b74c74023fd95b3d8be0/PrimeNumberTheoremAnd/Wiener.lean)
-provides `WeakPNT_AP` for each fixed modulus. Its threshold may depend on that modulus;
-`PageEstimate` needs one threshold valid simultaneously for every prime `p ≤ n`.
-The missing analytic ingredient is a uniform prime-counting estimate in arithmetic
-progressions. A standard route would develop quantitative Dirichlet L-function zero-free
-estimates, control of an exceptional real zero, and the resulting prime-counting error bound.
+The bridge first uses character orthogonality to bound von Mangoldt sums in arithmetic
+progressions. Removing prime powers gives a weighted prime-counting estimate at `2ⁿ`,
+uniformly for `p ≤ n`. Splitting the primes at `rⁿ`, where `1 < r < 2` is chosen sufficiently
+close to `2`, removes the logarithmic weights: the small-prime contribution tends to zero,
+and the large-prime weights lie between `n log r` and `n log 2`.
+
+All primality results now use this proof directly and no longer take a `PageEstimate`
+argument. Page and both Smolensky results depend only on `propext`, `Classical.choice`, and
+`Quot.sound`; no external theorem hypotheses remain in the main results.
 
 ### Formalised qualitative Smolensky theorem
 
@@ -68,7 +73,7 @@ The bridge translates PLB formulas to upstream ACC formulas, proves equality of 
 and node counts, and bounds depth and input indices. It then applies the upstream lower bound
 and the existing DAG/formula equivalence. Its axiom dependencies are only `propext`,
 `Classical.choice` and `Quot.sound`. The six qualitative `*_not_mem_ac0*_mod` theorems no longer
-take a `SmolenskyTheorem` argument; the Primes theorems still take `PageEstimate`.
+take a `SmolenskyTheorem` argument.
 
 ### Formalised quantitative Smolensky theorem
 
@@ -81,9 +86,8 @@ The upstream polynomial obstruction then gives size at least `2^t` on a polynomi
 of input lengths. Zero-padding and the existing asymptotic argument extend this to all large
 lengths and convert formula size to DAG size.
 
-The quantitative GCD and square-free lower bounds are unconditional; the quantitative
-Primes bound requires only `PageEstimate`. These theorems no longer take a
-`SmolenskyExpTheorem` argument. Their axiom dependencies are only `propext`,
+The quantitative Primes, GCD and square-free lower bounds are unconditional. These theorems
+no longer take a `SmolenskyExpTheorem` or `PageEstimate` argument. Their axiom dependencies are only `propext`,
 `Classical.choice` and `Quot.sound`.
 
 ## Circuit model
@@ -93,7 +97,7 @@ formulas (trees). It also defines non-uniform AC⁰ Turing reducibility `A ≤�
 polynomial size and constant depth, and `AC0 L`. The paper's circuits are DAGs, so `DAG.lean`
 defines DAG circuits whose size counts gates plus wires. It proves `dagReduces_iff`, which says
 that the DAG model and the formula model give exactly the same reducibility. Theorem 1 and
-Corollary 2 are stated in both models, and the hypotheses are stated in the DAG model.
+the qualitative Corollary 2 are stated in both models; the exponential bounds use the DAG model.
 
 Inputs are bit strings `x_{n−1} … x_0` that denote `∑ xᵢ 2ⁱ`, as in the paper. `GCD` and
 `mult` take inputs of length `3m` and `2m`, read as triples and pairs of `m`-bit numbers.
@@ -145,7 +149,8 @@ The remarks and open problems in Section 4 are not formalised. This includes the
 | `HittingSet.lean` | Adleman's argument as a hitting-set lemma |
 | `SquareFreeCount.lean`, `SquareFree.lean` | `mult ≤ᵀ Square-Free` |
 | `Adder.lean` | constant-depth adder |
-| `Page.lean` | equation (1) and its consequence |
+| `Page.lean` | statement of equation (1) and its window consequence |
+| `PageProof.lean` | proof of equation (1) from Siegel–Walfisz |
 | `Primes.lean` | `mult ≤ᵀ Primes` |
 | `Main.lean` | Theorem 1 and Corollary 2 |
 | `Smolensky.lean` | translation to upstream ACC formulas and qualitative Smolensky proof |

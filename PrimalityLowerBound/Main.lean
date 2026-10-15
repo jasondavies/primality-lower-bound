@@ -7,10 +7,10 @@ import PrimalityLowerBound.Smolensky
 /-!
 # Main results
 
-* **Theorem 1.** `TC⁰ ⊆ AC⁰[GCD]`, `TC⁰ ⊆ AC⁰[Square-Free]` (unconditional) and
-  `TC⁰ ⊆ AC⁰[Primes]` (assuming equation (1) of the paper, `PageEstimate`).
-* **Corollary 2.** `GCD` and `Square-Free` are not in `AC⁰[p]` for any prime `p`.
-  The same holds for `Primes` assuming `PageEstimate`. Qualitative Smolensky is proved.
+* **Theorem 1.** `TC⁰ ⊆ AC⁰[GCD]`, `TC⁰ ⊆ AC⁰[Square-Free]` and
+  `TC⁰ ⊆ AC⁰[Primes]`.
+* **Corollary 2.** `Primes`, `GCD` and `Square-Free` are not in `AC⁰[p]` for any prime `p`.
+  Page and qualitative Smolensky are proved.
 
 Both are stated for the formula model (`AC0`) and for the DAG-circuit model of the paper
 (`AC0DAG`); the two models coincide (`AC0DAG_eq`).
@@ -29,9 +29,9 @@ theorem maj_reduces_gcd : Maj ≤ᵀ GCD := maj_reduces_mult.trans mult_reduces_
 theorem maj_reduces_squarefree : Maj ≤ᵀ SquareFree :=
   maj_reduces_mult.trans mult_reduces_squarefree
 
-/-- `Maj ≤ᵀ Primes`, assuming equation (1). -/
-theorem maj_reduces_primes (hP : PageEstimate) : Maj ≤ᵀ Primes :=
-  maj_reduces_mult.trans (mult_reduces_primes hP)
+/-- `Maj ≤ᵀ Primes`. -/
+theorem maj_reduces_primes : Maj ≤ᵀ Primes :=
+  maj_reduces_mult.trans mult_reduces_primes
 
 /-- **Theorem 1** (GCD). -/
 theorem tc0_subset_ac0_gcd : TC0 ⊆ AC0 GCD := AC0.subset_of_reduces maj_reduces_gcd
@@ -40,9 +40,9 @@ theorem tc0_subset_ac0_gcd : TC0 ⊆ AC0 GCD := AC0.subset_of_reduces maj_reduce
 theorem tc0_subset_ac0_squarefree : TC0 ⊆ AC0 SquareFree :=
   AC0.subset_of_reduces maj_reduces_squarefree
 
-/-- **Theorem 1** (Primes), assuming equation (1) (Page's theorem on primes in progressions). -/
-theorem tc0_subset_ac0_primes (hP : PageEstimate) : TC0 ⊆ AC0 Primes :=
-  AC0.subset_of_reduces (maj_reduces_primes hP)
+/-- **Theorem 1** (Primes). -/
+theorem tc0_subset_ac0_primes : TC0 ⊆ AC0 Primes :=
+  AC0.subset_of_reduces maj_reduces_primes
 
 /-! ### Theorem 1 in the DAG-circuit model -/
 
@@ -59,9 +59,9 @@ theorem tc0DAG_subset_ac0DAG_gcd : TC0DAG ⊆ AC0DAG GCD := by
 theorem tc0DAG_subset_ac0DAG_squarefree : TC0DAG ⊆ AC0DAG SquareFree := by
   rw [TC0DAG_eq, AC0DAG_eq]; exact tc0_subset_ac0_squarefree
 
-/-- **Theorem 1** (Primes), DAG model, assuming equation (1). -/
-theorem tc0DAG_subset_ac0DAG_primes (hP : PageEstimate) : TC0DAG ⊆ AC0DAG Primes := by
-  rw [TC0DAG_eq, AC0DAG_eq]; exact tc0_subset_ac0_primes hP
+/-- **Theorem 1** (Primes), DAG model. -/
+theorem tc0DAG_subset_ac0DAG_primes : TC0DAG ⊆ AC0DAG Primes := by
+  rw [TC0DAG_eq, AC0DAG_eq]; exact tc0_subset_ac0_primes
 
 /-! ### Corollary 2 -/
 
@@ -105,11 +105,11 @@ theorem squarefree_not_mem_ac0_mod {p : ℕ} (hp : p.Prime) :
     SquareFree ∉ AC0 (ModLang p) :=
   not_mem_ac0_mod_of_mult_reduces mult_reduces_squarefree hp
 
-/-- **Corollary 2** (Primes): assuming equation (1),
+/-- **Corollary 2** (Primes):
 `Primes ∉ AC⁰[p]` for every prime `p`. -/
-theorem primes_not_mem_ac0_mod (hP : PageEstimate) {p : ℕ}
+theorem primes_not_mem_ac0_mod {p : ℕ}
     (hp : p.Prime) : Primes ∉ AC0 (ModLang p) :=
-  not_mem_ac0_mod_of_mult_reduces (mult_reduces_primes hP) hp
+  not_mem_ac0_mod_of_mult_reduces mult_reduces_primes hp
 
 /-! ### Corollary 2 in the DAG-circuit model -/
 
@@ -121,8 +121,8 @@ theorem squarefree_not_mem_ac0DAG_mod {p : ℕ} (hp : p.Prime) :
     SquareFree ∉ AC0DAG (ModLang p) := by
   rw [AC0DAG_eq]; exact squarefree_not_mem_ac0_mod hp
 
-theorem primes_not_mem_ac0DAG_mod (hP : PageEstimate) {p : ℕ}
+theorem primes_not_mem_ac0DAG_mod {p : ℕ}
     (hp : p.Prime) : Primes ∉ AC0DAG (ModLang p) := by
-  rw [AC0DAG_eq]; exact primes_not_mem_ac0_mod hP hp
+  rw [AC0DAG_eq]; exact primes_not_mem_ac0_mod hp
 
 end PLB

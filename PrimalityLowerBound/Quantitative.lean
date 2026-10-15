@@ -5,8 +5,8 @@ import PrimalityLowerBound.SmolenskyQuantitative
 # Corollary 2, quantitative form
 
 We prove quantitative Smolensky from the explicit formula approximation bounds. Consequently,
-bounded-depth circuits with `Mod_p` gates for `GCD` or `Square-Free` need size `2^(N^δ)` for
-some `δ > 0`. The result for `Primes` still assumes `PageEstimate`.
+bounded-depth circuits with `Mod_p` gates for `Primes`, `GCD` or `Square-Free` need size
+`2^(N^δ)` for some `δ > 0`. Page and quantitative Smolensky are both proved.
 
 The argument: a circuit for the language on `N` input bits also decides it on fewer bits (by
 padding), so composing the reduction `Mod_q ≤ᵀ mult ≤ᵀ A` with it yields a circuit for `Mod_q`
@@ -360,15 +360,15 @@ theorem exp_lower_bound_of_reduces {A : Lang} (V : ℕ → Prop)
     exact_mod_cast hsize
   linarith
 
-/-- **Corollary 2** (Primes, quantitative): assuming equation (1), for
+/-- **Corollary 2** (Primes, quantitative): for
 every prime `p` and depth `d`, depth-`d` circuits with `Mod_p` gates for `Primes` on `N` bits
 have size `≥ 2^(N^δ)` for some `δ > 0` and all large `N`. -/
-theorem primes_exp_lower_bound (hP : PageEstimate) {p : ℕ}
+theorem primes_exp_lower_bound {p : ℕ}
     (hp : p.Prime) (d : ℕ) :
     ∃ δ : ℝ, 0 < δ ∧ ∃ N₀ : ℕ, ∀ N ≥ N₀, ∀ D : DAG N, D.depth ≤ d →
       (∀ x, D.eval (ModLang p) x = Primes N x) → (2 : ℝ) ^ ((N : ℝ) ^ δ) ≤ D.size := by
   obtain ⟨δ, hδ, N₀, h⟩ := exp_lower_bound_of_reduces (fun _ => True)
-    (fun _ _ k hk => Or.inl (primes_projects hk)) (mult_reduces_primes hP) hp d
+    (fun _ _ k hk => Or.inl (primes_projects hk)) mult_reduces_primes hp d
   exact ⟨δ, hδ, N₀, fun N hN => h N hN trivial⟩
 
 /-- **Corollary 2** (Square-Free, quantitative). -/
