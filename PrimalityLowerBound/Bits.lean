@@ -20,6 +20,12 @@ lemma getD_of_ge {n : ℕ} (z : Fin n → Bool) {i : ℕ} (h : n ≤ i) : getD z
 @[simp] lemma getD_fin {n : ℕ} (z : Fin n → Bool) (i : Fin n) : getD z i = z i := by
   simp [getD]
 
+/-- The position `s` as an index into a string of length `n`, if `s < n`. -/
+def idx (n s : ℕ) : Option (Fin n) := if h : s < n then some ⟨s, h⟩ else none
+
+@[simp] lemma elim_idx {n : ℕ} (z : Fin n → Bool) (s : ℕ) : (idx n s).elim false z = getD z s := by
+  unfold idx getD; split <;> rfl
+
 /-- `bitsVal b len = ∑_{i < len} bᵢ 2ⁱ`. -/
 def bitsVal (b : ℕ → Bool) : ℕ → ℕ
   | 0 => 0

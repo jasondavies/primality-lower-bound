@@ -183,20 +183,16 @@ lemma eval_sfGate {p m y : ℕ} (hp3 : 3 ≤ p) (hy : y < 2 ^ sfE p m)
   rw [SquareFree, hval]
 
 lemma size_sfGate_le (p m y : ℕ) : (sfGate p m y).size ≤ sfQ p m + 1 := by
-  refine (size_oracle_le _ (s := 1) fun s => ?_).trans (by simp)
+  refine (size_gate_le _ _ (s := 1) fun s => ?_).trans (by simp)
   simp only [sfQBit]; split_ifs <;> simp [size_inBit, size_const]
 
 lemma depth_sfGate_le (p m y : ℕ) : (sfGate p m y).depth ≤ 2 := by
-  refine depth_oracle_le _ fun s => ?_
+  refine depth_gate_le _ _ fun s => ?_
   simp only [sfQBit]; split_ifs
   · exact depth_const _
   · exact depth_inBit_le _ _
   · exact depth_const _
   · exact depth_const _
-
-/-- Circuit deciding `p ∣ x` from a list `ys` of advice strings. -/
-noncomputable def sfDiv (p m : ℕ) (ys : List ℕ) : Circuit (2 * m) :=
-  not (orL (ys.map fun y => sfGate p m y))
 
 lemma sfQ_le {p m : ℕ} (hp : p ≤ 8 * (m + 1) ^ 2) : sfQ p m ≤ (m + 2) ^ 13 := by
   set P := m + 2
@@ -255,24 +251,16 @@ theorem mult_reduces_squarefree : mult ≤ᵀ SquareFree := by
   obtain ⟨ys, hlen, hysY, hhit⟩ := exists_hitting_list X Y hYne
     (fun x y => Squarefree (sfH p m x + 2 ^ M * p ^ 2 * y)) 4 m (by norm_num)
     ((Finset.card_filter_le _ _).trans (by simp)) hdens
-  refine ⟨sfDiv p m ys, ?_, ?_, fun z => ?_⟩
-  · have : (orL (ys.map fun y => sfGate p m y)).depth ≤ 3 :=
-      depth_orL_le _ fun c hc => by
-        obtain ⟨y, -, rfl⟩ := List.mem_map.1 hc; exact depth_sfGate_le _ _ _
-    simp only [sfDiv, depth]; omega
+  refine ⟨adviceDiv (sfGate p m) ys,
+    (depth_adviceDiv_le _ _ fun y => depth_sfGate_le p m y).trans (by omega), ?_, ?_⟩
   · have hQ : sfQ p m ≤ (m + 2) ^ 13 := sfQ_le ((oddPrime_le j).trans (by gcongr))
-    have hor : (orL (ys.map fun y => sfGate p m y)).size ≤ (4 * (m + 1)) * ((m + 2) ^ 13 + 1) + 1 :=
-      (size_orL_le _ (s := (m + 2) ^ 13 + 1) fun c hc => by
-        obtain ⟨y, -, rfl⟩ := List.mem_map.1 hc
-        exact (size_sfGate_le _ _ _).trans (by omega)).trans (by
-          simp only [List.length_map]; gcongr)
-    simp only [sfDiv, size]
     set P := m + 2
     have hP : 3 ≤ P := by omega
     have h1 : 1 ≤ P ^ 13 := Nat.one_le_pow _ _ (by omega)
     have h9 : 9 ≤ P ^ 2 := by nlinarith
-    calc (orL (ys.map fun y => sfGate p m y)).size + 1 ≤ (4 * (m + 1)) * (P ^ 13 + 1) + 2 := by
-          omega
+    calc (adviceDiv (sfGate p m) ys).size ≤ ys.length * (P ^ 13 + 1) + 2 :=
+          size_adviceDiv_le _ _ fun y => (size_sfGate_le _ _ _).trans (by omega)
+      _ ≤ (4 * (m + 1)) * (P ^ 13 + 1) + 2 := by gcongr
       _ ≤ (4 * P) * (2 * P ^ 13) + P ^ 14 := by
           have : 2 ≤ P ^ 14 := by
             calc 2 ≤ P := by omega
@@ -282,24 +270,14 @@ theorem mult_reduces_squarefree : mult ≤ᵀ SquareFree := by
       _ = 9 * P ^ 14 := by ring
       _ ≤ P ^ 2 * P ^ 14 := Nat.mul_le_mul_right _ h9
       _ ≤ P ^ 18 := by rw [← pow_add]; exact Nat.pow_le_pow_right (by omega) (by norm_num)
-  · set x := valFrom z 0 m
-    have hx : x < 2 ^ m := valFrom_lt z 0 m
-    rw [sfDiv, eval_not, eval_orL]
-    by_cases hpx : p ∣ x
-    · have hno : ¬ ∃ c ∈ ys.map (fun y => sfGate p m y), c.eval SquareFree z = true := by
-        rintro ⟨c, hc, hce⟩
-        obtain ⟨y, hy, rfl⟩ := List.mem_map.1 hc
-        rw [eval_sfGate hp3 (by simpa [Y] using hysY y hy), decide_eq_true_eq,
-          Nat.squarefree_iff_prime_squarefree] at hce
-        apply hce p hp
-        rw [← sq]
-        exact dvd_add ((sq_dvd_sfH_iff hp hp3 hx).2 hpx)
-          (Dvd.dvd.mul_right (dvd_mul_left _ _) _)
-      rw [decide_eq_false hno]; simp [hpx]
-    · obtain ⟨y, hy, hR⟩ := hhit x (by simp [X, hx, hpx])
-      have hyes : ∃ c ∈ ys.map (fun y => sfGate p m y), c.eval SquareFree z = true :=
-        ⟨sfGate p m y, List.mem_map.2 ⟨y, hy, rfl⟩, by
-          rw [eval_sfGate hp3 (by simpa [Y] using hysY y hy)]; simpa using hR⟩
-      rw [decide_eq_true hyes]; simp [hpx]
+  · refine eval_adviceDiv _ ys (fun x y => Squarefree (sfH p m x + 2 ^ M * p ^ 2 * y))
+      (fun y hy z => eval_sfGate hp3 (by simpa [Y] using hysY y hy) z) ?_ ?_
+    · intro x hx y _ hpx hsq
+      rw [Nat.squarefree_iff_prime_squarefree] at hsq
+      apply hsq p hp
+      rw [← sq]
+      exact dvd_add ((sq_dvd_sfH_iff hp hp3 hx).2 hpx) (Dvd.dvd.mul_right (dvd_mul_left _ _) _)
+    · intro x hx hpx
+      exact hhit x (by simp [X, hx, hpx])
 
 end PLB

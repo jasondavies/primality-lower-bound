@@ -79,18 +79,18 @@ lemma eval_gcdDiv (m w p : ℕ) (hp0 : 0 < p) (hmw : m ≤ w) (hp : p < 2 ^ w)
   · intro h i; rw [h]
 
 lemma size_gcdDiv_le (m w p : ℕ) : (gcdDiv m w p).size ≤ w * (3 * w + 2) + 1 := by
-  refine size_and_le _ fun i => ?_
+  refine size_gate_le _ _ fun i => ?_
   have hg : (gcdGate m w p i).size ≤ 3 * w + 1 := by
-    refine (size_oracle_le _ (s := 1) fun s => ?_).trans (by simp)
+    refine (size_gate_le _ _ (s := 1) fun s => ?_).trans (by simp)
     simp only [gcdQuery]; split_ifs <;> simp [size_inBit, size_const]
   split
   · omega
   · simp only [size]; omega
 
 lemma depth_gcdDiv_le (m w p : ℕ) : (gcdDiv m w p).depth ≤ 4 := by
-  refine (depth_and_le _ (d := 3) fun i => ?_)
+  refine (depth_gate_le _ _ (d := 3) fun i => ?_)
   have hg : (gcdGate m w p i).depth ≤ 2 := by
-    refine depth_oracle_le _ fun s => ?_
+    refine depth_gate_le _ _ fun s => ?_
     simp only [gcdQuery]; split_ifs
     · exact depth_inBit_le _ _
     · exact depth_const _

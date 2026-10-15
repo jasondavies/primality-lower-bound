@@ -52,18 +52,14 @@ lemma eval_primeGate {m p y : ℕ} (hy : y ≤ 2 ^ (m + p + 2)) (z : Fin (2 * m)
 
 lemma size_primeGate_le (m p y : ℕ) :
     (primeGate m p y).size ≤ prLen m p * (32 * prLen m p ^ 2) + 1 := by
-  refine size_oracle_le _ fun i => ?_
+  refine size_gate_le _ _ fun i => ?_
   refine (size_sumBitC_le (s := 1) (fun k => (size_inBit m k).le) i).trans ?_
   have : (i : ℕ) + 1 ≤ prLen m p := i.2
   have : ((i : ℕ) + 1) ^ 2 ≤ prLen m p ^ 2 := Nat.pow_le_pow_left this 2
   omega
 
 lemma depth_primeGate_le (m p y : ℕ) : (primeGate m p y).depth ≤ 8 :=
-  depth_oracle_le _ fun i => (depth_sumBitC_le (d := 1) (fun k => depth_inBit_le m k) i)
-
-/-- Circuit deciding `p ∣ x` from a list `ys` of advice values. -/
-noncomputable def primeDiv (m p : ℕ) (ys : List ℕ) : Circuit (2 * m) :=
-  not (orL (ys.map fun y => primeGate m p y))
+  depth_gate_le _ _ fun i => (depth_sumBitC_le (d := 1) (fun k => depth_inBit_le m k) i)
 
 /-- Every prime in the window yields an advice value `y ∈ [2, 2^{N+1}]` with `x + p y` prime. -/
 lemma window_card_le {m p x : ℕ} (hp : 0 < p) (hx : x < 2 ^ m) :
@@ -151,11 +147,8 @@ theorem mult_reduces_primes (hP : PageEstimate) : mult ≤ᵀ Primes := by
     have := hysY y hy
     simp only [Y, Finset.mem_Icc] at this
     exact this
-  refine ⟨primeDiv m p ys, ?_, ?_, fun z => ?_⟩
-  · have : (orL (ys.map fun y => primeGate m p y)).depth ≤ 9 :=
-      depth_orL_le _ fun c hc => by
-        obtain ⟨y, -, rfl⟩ := List.mem_map.1 hc; exact depth_primeGate_le _ _ _
-    simp only [primeDiv, depth]; omega
+  refine ⟨adviceDiv (primeGate m p) ys,
+    (depth_adviceDiv_le _ _ fun y => depth_primeGate_le m p y).trans (by omega), ?_, ?_⟩
   · -- size bookkeeping
     set P := m + 2
     have hP : 3 ≤ P := by omega
@@ -180,12 +173,6 @@ theorem mult_reduces_primes (hP : PageEstimate) : mult ≤ᵀ Primes := by
       simp only [K]
       have : N + 1 ≤ 9 * P ^ 2 := by simp only [N]; omega
       gcongr; omega
-    have hor : (orL (ys.map fun y => primeGate m p y)).size ≤
-        (4 * (9 * P ^ 2) * (8 * P ^ 2) * P) * (2 * 32 * 17 ^ 3 * P ^ 6) + 1 :=
-      (size_orL_le _ (s := 2 * 32 * 17 ^ 3 * P ^ 6) fun c hc => by
-        obtain ⟨y, -, rfl⟩ := List.mem_map.1 hc; exact hgate y).trans (by
-          simp only [List.length_map]; gcongr)
-    simp only [primeDiv, size]
     have hc : (4 * (9 * P ^ 2) * (8 * P ^ 2) * P) * (2 * 32 * 17 ^ 3 * P ^ 6) + 2 ≤
         2 ^ 30 * P ^ 11 := by
       have : (4 * (9 * P ^ 2) * (8 * P ^ 2) * P) * (2 * 32 * 17 ^ 3 * P ^ 6) =
@@ -193,27 +180,21 @@ theorem mult_reduces_primes (hP : PageEstimate) : mult ≤ᵀ Primes := by
       have h1 : 1 ≤ P ^ 11 := Nat.one_le_pow _ _ (by omega)
       rw [this]; norm_num; omega
     have h30 : 2 ^ 30 ≤ P ^ 30 := Nat.pow_le_pow_left (by omega) 30
-    calc (orL (ys.map fun y => primeGate m p y)).size + 1 ≤ 2 ^ 30 * P ^ 11 := by omega
+    calc (adviceDiv (primeGate m p) ys).size ≤ ys.length * (2 * 32 * 17 ^ 3 * P ^ 6) + 2 :=
+          size_adviceDiv_le _ _ hgate
+      _ ≤ (4 * (9 * P ^ 2) * (8 * P ^ 2) * P) * (2 * 32 * 17 ^ 3 * P ^ 6) + 2 := by gcongr
+      _ ≤ 2 ^ 30 * P ^ 11 := hc
       _ ≤ P ^ 30 * P ^ 11 := Nat.mul_le_mul_right _ h30
       _ ≤ P ^ 45 := by rw [← pow_add]; exact Nat.pow_le_pow_right (by omega) (by norm_num)
-  · set x := valFrom z 0 m
-    have hx : x < 2 ^ m := valFrom_lt z 0 m
-    rw [primeDiv, eval_not, eval_orL]
-    by_cases hpx : p ∣ x
-    · have hno : ¬ ∃ c ∈ ys.map (fun y => primeGate m p y), c.eval Primes z = true := by
-        rintro ⟨c, hc, hce⟩
-        obtain ⟨y, hy, rfl⟩ := List.mem_map.1 hc
-        rw [eval_primeGate (hyb y hy).2, decide_eq_true_eq] at hce
-        have hd : p ∣ x + p * y := dvd_add hpx (dvd_mul_right _ _)
-        rcases hce.eq_one_or_self_of_dvd p hd with h | h
-        · omega
-        · have : 2 * p ≤ p * y := by rw [mul_comm]; exact Nat.mul_le_mul_left _ (hyb y hy).1
-          omega
-      rw [decide_eq_false hno]; simp [hpx]
-    · obtain ⟨y, hy, hR⟩ := hhit x (by simp [X, hx, hpx])
-      have hyes : ∃ c ∈ ys.map (fun y => primeGate m p y), c.eval Primes z = true :=
-        ⟨primeGate m p y, List.mem_map.2 ⟨y, hy, rfl⟩, by
-          rw [eval_primeGate (hyb y hy).2]; simpa using hR⟩
-      rw [decide_eq_true hyes]; simp [hpx]
+  · refine eval_adviceDiv _ ys (fun x y => Nat.Prime (x + p * y))
+      (fun y hy z => eval_primeGate (hyb y hy).2 z) ?_ ?_
+    · intro x _ y hy hpx hprime
+      have hd : p ∣ x + p * y := dvd_add hpx (dvd_mul_right _ _)
+      rcases hprime.eq_one_or_self_of_dvd p hd with h | h
+      · omega
+      · have : 2 * p ≤ p * y := by rw [mul_comm]; exact Nat.mul_le_mul_left _ (hyb y hy).1
+        omega
+    · intro x hx hpx
+      exact hhit x (by simp [X, hx, hpx])
 
 end PLB

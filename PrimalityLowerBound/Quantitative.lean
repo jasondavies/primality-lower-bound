@@ -22,27 +22,8 @@ open Circuit
 def Projects (A : Lang) (k N : ℕ) : Prop :=
   ∃ π : Fin N → Option (Fin k), ∀ x : Fin k → Bool, A N (fun i => (π i).elim false x) = A k x
 
-/-- The circuit realising a wire of a projection. -/
-def projCircuit {k N : ℕ} (π : Fin N → Option (Fin k)) (i : Fin N) : Circuit k :=
-  match π i with
-  | some j => input j
-  | none => const false
-
-lemma eval_projCircuit {k N : ℕ} (L : Lang) (π : Fin N → Option (Fin k)) (x : Fin k → Bool)
-    (i : Fin N) : (projCircuit π i).eval L x = (π i).elim false x := by
-  unfold projCircuit; cases π i <;> simp
-
-lemma size_projCircuit {k N : ℕ} (π : Fin N → Option (Fin k)) (i : Fin N) :
-    (projCircuit π i).size ≤ 1 := by
-  unfold projCircuit; cases π i <;> simp [size, size_const]
-
-lemma depth_projCircuit {k N : ℕ} (π : Fin N → Option (Fin k)) (i : Fin N) :
-    (projCircuit π i).depth ≤ 1 := by
-  unfold projCircuit; cases π i <;> simp [depth, depth_const]
-
 /-- Zero-extension of a bit string. -/
-def zeroPad (k N : ℕ) : Fin N → Option (Fin k) := fun i =>
-  if h : (i : ℕ) < k then some ⟨i, h⟩ else none
+def zeroPad (k N : ℕ) : Fin N → Option (Fin k) := fun i => idx k i
 
 lemma val_zeroPad {k N : ℕ} (hkN : k ≤ N) (x : Fin k → Bool) :
     val (fun i => (zeroPad k N i).elim false x) = val x := by
@@ -50,10 +31,10 @@ lemma val_zeroPad {k N : ℕ} (hkN : k ≤ N) (x : Fin k → Bool) :
   intro i
   simp only [val, testBit_bitsVal]
   by_cases hi : i < k
-  · rw [getD_of_lt _ (by omega), getD_of_lt _ hi]
+  · rw [getD_of_lt _ (by omega : i < N)]
     simp [zeroPad, hi, show i < N by omega]
   · by_cases hiN : i < N
-    · rw [getD_of_lt _ hiN]; simp [zeroPad, hi, hiN]
+    · rw [getD_of_lt _ hiN]; simp [zeroPad, hi, hiN, getD_of_ge x (by omega : k ≤ i)]
     · simp [hi, hiN]
 
 lemma primes_projects {k N : ℕ} (hkN : k ≤ N) : Projects Primes k N :=
@@ -114,19 +95,19 @@ lemma transfer {A B L' : Lang} {dR cR N n : ℕ} (R : Circuit n) (hRd : R.depth 
       ∀ x, C'.eval L' x = B n x := by
   classical
   let E : (k : ℕ) → Circuit k := fun k =>
-    if h : Projects A k N then C.subst (projCircuit (Classical.choose h))
+    if h : Projects A k N then C.subst fun i => wire (Classical.choose h i)
     else if h' : ∃ b, ∀ x, A k x = b then const (Classical.choose h') else const false
   have hEs : ∀ k, (E k).size ≤ C.size := by
     intro k
     simp only [E]
     split
-    · exact (size_subst_le _ (fun i => size_projCircuit _ i) le_rfl C).trans (by simp)
+    · exact (size_subst_le _ (fun i => (size_wire _).le) le_rfl C).trans (by simp)
     · split <;> (rw [size_const]; exact size_pos C)
   have hEd : ∀ k, (E k).depth ≤ C.depth + 1 := by
     intro k
     simp only [E]
     split
-    · exact depth_subst_le _ (fun i => depth_projCircuit _ i) C
+    · exact depth_subst_le _ (fun i => depth_wire_le _) C
     · split <;> exact (depth_const _).trans (by omega)
   have hEe : ∀ k ≤ R.size, ∀ y, (E k).eval L' y = A k y := by
     intro k hk y
@@ -135,7 +116,7 @@ lemma transfer {A B L' : Lang} {dR cR N n : ℕ} (R : Circuit n) (hRd : R.depth 
     split
     · next h =>
       rw [eval_subst]
-      simp only [eval_projCircuit]
+      simp only [eval_wire]
       rw [hC]; exact Classical.choose_spec h y
     · next h =>
       have h' : ∃ b, ∀ x, A k x = b := (hproj k hkN).resolve_left h

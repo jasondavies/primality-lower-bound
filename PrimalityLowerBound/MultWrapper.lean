@@ -13,25 +13,16 @@ namespace PLB
 open Circuit
 
 /-- The bit `s` of the input, or `false` if `s ≥ m` (a wire or a constant). -/
-def inBit {n : ℕ} (m s : ℕ) : Circuit n :=
-  if h : s < m ∧ s < n then input ⟨s, h.2⟩ else const false
+def inBit {n : ℕ} (m s : ℕ) : Circuit n := wire (if s < m then idx n s else none)
 
 @[simp] lemma eval_inBit {n : ℕ} (L : Lang) (z : Fin n → Bool) (m s : ℕ) :
     (inBit m s : Circuit n).eval L z = (decide (s < m) && getD z s) := by
   unfold inBit
-  by_cases h : s < m ∧ s < n
-  · rw [dite_eq_left h]; simp [h.1, getD_of_lt z h.2]
-  · rw [dite_eq_right h, eval_const]
-    by_cases hs : s < m
-    · have : n ≤ s := by omega
-      simp [hs, getD_of_ge z this]
-    · simp [hs]
+  by_cases hs : s < m <;> simp [hs]
 
-lemma size_inBit {n : ℕ} (m s : ℕ) : (inBit m s : Circuit n).size = 1 := by
-  unfold inBit; split <;> simp [size, size_const]
+lemma size_inBit {n : ℕ} (m s : ℕ) : (inBit m s : Circuit n).size = 1 := size_wire _
 
-lemma depth_inBit_le {n : ℕ} (m s : ℕ) : (inBit m s : Circuit n).depth ≤ 1 := by
-  unfold inBit; split <;> simp [depth, depth_const]
+lemma depth_inBit_le {n : ℕ} (m s : ℕ) : (inBit m s : Circuit n).depth ≤ 1 := depth_wire_le _
 
 /-- `valFrom z s m = V` iff the bits agree, for `V < 2^m`. -/
 lemma valFrom_eq_iff {n : ℕ} (z : Fin n → Bool) (s m V : ℕ) (hV : V < 2 ^ m) :
@@ -59,10 +50,10 @@ lemma eval_eqCircuit (L : Lang) (m j : ℕ) (hj : j < 2 ^ m) (z : Fin (2 * m) �
     rwa [getD_of_lt z (by omega)] at this
 
 lemma size_eqCircuit_le (m j : ℕ) : (eqCircuit m j).size ≤ 2 * m + 1 := by
-  refine (size_and_le _ (s := 2) fun _ => size_lit_le _ _).trans (by omega)
+  refine (size_gate_le _ _ (s := 2) fun _ => size_lit_le _ _).trans (by omega)
 
 lemma depth_eqCircuit_le (m j : ℕ) : (eqCircuit m j).depth ≤ 2 :=
-  depth_and_le _ fun _ => depth_lit_le _ _
+  depth_gate_le _ _ fun _ => depth_lit_le _ _
 
 /-- The circuit for `mult` on `2m` bits from circuits `D j` deciding `p_j ∣ x`. -/
 def multCircuit (m : ℕ) (D : ℕ → Circuit (2 * m)) : Circuit (2 * m) :=
@@ -135,6 +126,47 @@ lemma multCircuit_depth_le (m : ℕ) (D : ℕ → Circuit (2 * m)) {d : ℕ}
   rcases hc with rfl | rfl
   · exact (depth_eqCircuit_le m j).trans (by omega)
   · exact (hD j).trans (by omega)
+
+/-! ### Deciding `p ∣ x` from advice (Adleman's trick) -/
+
+/-- `¬ ⋁_{y ∈ ys} g y`: decides `p ∣ x` when the gates `g y` test a property `R x y` that fails
+whenever `p ∣ x` and that some advice value `y ∈ ys` satisfies whenever `p ∤ x`. -/
+def adviceDiv {m : ℕ} (g : ℕ → Circuit (2 * m)) (ys : List ℕ) : Circuit (2 * m) :=
+  not (orL (ys.map g))
+
+lemma eval_adviceDiv {X : Lang} {m p : ℕ} (g : ℕ → Circuit (2 * m)) (ys : List ℕ)
+    (R : ℕ → ℕ → Prop) [∀ x y, Decidable (R x y)]
+    (hg : ∀ y ∈ ys, ∀ z, (g y).eval X z = decide (R (valFrom z 0 m) y))
+    (hdvd : ∀ x < 2 ^ m, ∀ y ∈ ys, p ∣ x → ¬ R x y)
+    (hhit : ∀ x < 2 ^ m, ¬ p ∣ x → ∃ y ∈ ys, R x y) (z : Fin (2 * m) → Bool) :
+    (adviceDiv g ys).eval X z = decide (p ∣ valFrom z 0 m) := by
+  set x := valFrom z 0 m
+  have hx : x < 2 ^ m := valFrom_lt z 0 m
+  rw [adviceDiv, eval_not, eval_orL]
+  by_cases hpx : p ∣ x
+  · have hno : ¬ ∃ c ∈ ys.map g, c.eval X z = true := by
+      rintro ⟨c, hc, hce⟩
+      obtain ⟨y, hy, rfl⟩ := List.mem_map.1 hc
+      rw [hg y hy, decide_eq_true_eq] at hce
+      exact hdvd x hx y hy hpx hce
+    rw [decide_eq_false hno]; simp [hpx]
+  · obtain ⟨y, hy, hR⟩ := hhit x hx hpx
+    have hyes : ∃ c ∈ ys.map g, c.eval X z = true :=
+      ⟨g y, List.mem_map.2 ⟨y, hy, rfl⟩, by rw [hg y hy]; simpa using hR⟩
+    rw [decide_eq_true hyes]; simp [hpx]
+
+lemma depth_adviceDiv_le {m d : ℕ} (g : ℕ → Circuit (2 * m)) (ys : List ℕ)
+    (h : ∀ y, (g y).depth ≤ d) : (adviceDiv g ys).depth ≤ d + 2 := by
+  have : (orL (ys.map g)).depth ≤ d + 1 :=
+    depth_orL_le _ fun c hc => by obtain ⟨y, -, rfl⟩ := List.mem_map.1 hc; exact h y
+  simp only [adviceDiv, depth]; omega
+
+lemma size_adviceDiv_le {m s : ℕ} (g : ℕ → Circuit (2 * m)) (ys : List ℕ)
+    (h : ∀ y, (g y).size ≤ s) : (adviceDiv g ys).size ≤ ys.length * s + 2 := by
+  have : (orL (ys.map g)).size ≤ ys.length * s + 1 :=
+    (size_orL_le _ fun c hc => by obtain ⟨y, -, rfl⟩ := List.mem_map.1 hc; exact h y).trans
+      (by simp)
+  simp only [adviceDiv, size]; omega
 
 /-- **The wrapper.** To show `mult ≤ᵀ X` it suffices to decide `p_j ∣ x` (for `m`-bit `x` and
 `1 ≤ j ≤ m`, `m` large) by polynomial-size constant-depth circuits with `X` gates. -/

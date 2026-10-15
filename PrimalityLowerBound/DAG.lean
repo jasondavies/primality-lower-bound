@@ -17,8 +17,10 @@ namespace PLB
 
 open Circuit
 
+/-- A DAG gate is a `NOT` gate or an unbounded fan-in gate of type `op`. -/
 inductive GateKind
-  | not | and | or | oracle
+  | not
+  | gate (op : Op)
 
 /-- A gate: its kind and its ordered list of input wires. -/
 structure Gate (n : ℕ) where
@@ -142,11 +144,6 @@ lemma ofFn_get_apply {α β : Type} (F : (m : ℕ) → (Fin m → Bool) → β) 
   congr 1
   exact (Fin.heq_fun_iff h).2 fun i => by simp
 
-/-- `AND` of `m` bits. -/
-def allFin (m : ℕ) (b : Fin m → Bool) : Bool := decide (∀ i, b i = true)
-/-- `OR` of `m` bits. -/
-def anyFin (m : ℕ) (b : Fin m → Bool) : Bool := decide (∃ i, b i = true)
-
 namespace Gate
 
 /-- Value of a wire. -/
@@ -157,9 +154,7 @@ def argVal (x : Fin n → Bool) (prev : List Bool) (w : Fin n ⊕ ℕ) : Bool :=
 def apply (L : Lang) (x : Fin n → Bool) (g : Gate n) (prev : List Bool) : Bool :=
   match g.kind with
   | .not => !(if h : 0 < g.wires.length then argVal x prev (g.wires.get ⟨0, h⟩) else false)
-  | .and => allFin _ fun i => argVal x prev (g.wires.get i)
-  | .or => anyFin _ fun i => argVal x prev (g.wires.get i)
-  | .oracle => L _ fun i => argVal x prev (g.wires.get i)
+  | .gate op => op.apply L _ fun i => argVal x prev (g.wires.get i)
 
 /-- Depth of a wire. -/
 def argDepth (prev : List ℕ) (w : Fin n ⊕ ℕ) : ℕ := Sum.elim (fun _ => 0) (fun d => prev.getD d 0) w
@@ -175,9 +170,7 @@ def argCirc (prev : List (Circuit n)) (w : Fin n ⊕ ℕ) : Circuit n :=
 def toCircuit (g : Gate n) (prev : List (Circuit n)) : Circuit n :=
   match g.kind with
   | .not => not (if h : 0 < g.wires.length then argCirc prev (g.wires.get ⟨0, h⟩) else const false)
-  | .and => and fun i => argCirc prev (g.wires.get i)
-  | .or => or fun i => argCirc prev (g.wires.get i)
-  | .oracle => oracle fun i => argCirc prev (g.wires.get i)
+  | .gate op => gate op fun i => argCirc prev (g.wires.get i)
 
 end Gate
 
@@ -260,9 +253,7 @@ lemma runGates_toCircuit_eval (L : Lang) (x : Fin n → Bool) (gs : List (Gate n
     unfold Gate.toCircuit Gate.apply
     cases g.kind
     · simp only [eval_not]; split <;> simp [harg]
-    · simp [allFin, harg]
-    · simp [anyFin, harg]
-    · simp [harg]
+    · simp only [eval_gate, harg]
 
 lemma DAG.eval_toCircuit (D : DAG n) (L : Lang) (x : Fin n → Bool) :
     D.toCircuit.eval L x = D.eval L x := by
@@ -325,12 +316,8 @@ lemma unfoldInv_step {W : ℕ} (g : Gate n) (hg : g.wires.length ≤ W) (F : Lis
       simp only [size, depth]
       have : 1 ≤ B ^ δ := Nat.one_le_pow _ _ (by omega)
       exact ⟨by rw [← hpow]; nlinarith [hc.1], by omega⟩
-    · exact ⟨(size_and_le _ fun i => (harg _ (List.get_mem _ _)).1).trans (hW _ hg),
-        depth_and_le _ fun i => (harg _ (List.get_mem _ _)).2⟩
-    · exact ⟨(size_or_le _ fun i => (harg _ (List.get_mem _ _)).1).trans (hW _ hg),
-        depth_or_le _ fun i => (harg _ (List.get_mem _ _)).2⟩
-    · exact ⟨(size_oracle_le _ fun i => (harg _ (List.get_mem _ _)).1).trans (hW _ hg),
-        depth_oracle_le _ fun i => (harg _ (List.get_mem _ _)).2⟩
+    · exact ⟨(size_gate_le _ _ fun i => (harg _ (List.get_mem _ _)).1).trans (hW _ hg),
+        depth_gate_le _ _ fun i => (harg _ (List.get_mem _ _)).2⟩
   · simpa using hinv d
 
 lemma unfoldInv_run {W : ℕ} (gs : List (Gate n)) (hgs : ∀ g ∈ gs, g.wires.length ≤ W)
@@ -373,14 +360,10 @@ def topWires (bs : List (List (Gate n))) (k : ℕ) : List (Fin n ⊕ ℕ) :=
 
 /-- A formula as a list of gates (one gate per node; an input leaf becomes a one-wire `AND`). -/
 def compile : Circuit n → List (Gate n)
-  | Circuit.input i => [⟨.and, [Sum.inl i]⟩]
+  | Circuit.input i => [⟨.gate .and, [Sum.inl i]⟩]
   | Circuit.not c => compile c ++ [⟨.not, [Sum.inr 0]⟩]
-  | @Circuit.and _ k cs => (List.ofFn fun i => compile (cs i)).flatten ++
-      [⟨.and, topWires (List.ofFn fun i => compile (cs i)) k⟩]
-  | @Circuit.or _ k cs => (List.ofFn fun i => compile (cs i)).flatten ++
-      [⟨.or, topWires (List.ofFn fun i => compile (cs i)) k⟩]
-  | @Circuit.oracle _ k cs => (List.ofFn fun i => compile (cs i)).flatten ++
-      [⟨.oracle, topWires (List.ofFn fun i => compile (cs i)) k⟩]
+  | @Circuit.gate _ op k cs => (List.ofFn fun i => compile (cs i)).flatten ++
+      [⟨.gate op, topWires (List.ofFn fun i => compile (cs i)) k⟩]
 
 lemma compile_ne_nil (c : Circuit n) : compile c ≠ [] := by
   cases c <;> simp [compile]
@@ -423,7 +406,7 @@ lemma compile_local (c : Circuit n) : LocalGates (compile c) := by
     simp only [List.mem_singleton, Sum.inr.injEq] at hd
     subst hd
     exact List.length_pos_iff.2 (compile_ne_nil c)
-  | @and k cs ih | @or k cs ih | @oracle k cs ih =>
+  | @gate op k cs ih =>
     simp only [compile]
     apply (LocalGates.flatten _).snoc
     · exact topWires_lt _ k (by simp) fun b hb => by
@@ -459,25 +442,15 @@ lemma getD_blocks {α : Type} {step : Gate n → List α → α} {k : ℕ} (cs :
 lemma compile_eval (L : Lang) (x : Fin n → Bool) (c : Circuit n) :
     (runGates (Gate.apply L x) [] (compile c)).getD 0 false = c.eval L x := by
   induction c with
-  | input i => simp [compile, runGates, Gate.apply, allFin, Gate.argVal]
+  | input i => simp [compile, runGates, Gate.apply, Op.apply, Gate.argVal]
   | not c ih =>
     rw [compile, runGates_append, runGates_local (stepLocal_apply L x) (compile_local c)]
     simp [runGates, Gate.apply, Gate.argVal, ← ih]
-  | @and k cs ih =>
+  | @gate op k cs ih =>
     rw [compile, run_blocks (stepLocal_apply L x) cs _ false]
     simp only [Gate.apply, topWires]
-    rw [ofFn_get_apply allFin (fun i : Fin k => (Sum.inr _ : Fin n ⊕ ℕ))]
-    simp only [Gate.argVal, Sum.elim_inr, getD_blocks, ih, allFin, eval_and]
-  | @or k cs ih =>
-    rw [compile, run_blocks (stepLocal_apply L x) cs _ false]
-    simp only [Gate.apply, topWires]
-    rw [ofFn_get_apply anyFin (fun i : Fin k => (Sum.inr _ : Fin n ⊕ ℕ))]
-    simp only [Gate.argVal, Sum.elim_inr, getD_blocks, ih, anyFin, eval_or]
-  | @oracle k cs ih =>
-    rw [compile, run_blocks (stepLocal_apply L x) cs _ false]
-    simp only [Gate.apply, topWires]
-    rw [ofFn_get_apply L (fun i : Fin k => (Sum.inr _ : Fin n ⊕ ℕ))]
-    simp only [Gate.argVal, Sum.elim_inr, getD_blocks, ih, eval_oracle]
+    rw [ofFn_get_apply (op.apply L) (fun i : Fin k => (Sum.inr _ : Fin n ⊕ ℕ))]
+    simp only [Gate.argVal, Sum.elim_inr, getD_blocks, ih, eval_gate]
 
 lemma foldr_max_le {l : List ℕ} {M : ℕ} (h : ∀ a ∈ l, a ≤ M) : l.foldr max 0 ≤ M := by
   induction l with
@@ -495,7 +468,7 @@ lemma compile_depth (c : Circuit n) :
     have : (runGates Gate.depthStep [] (compile c) ++ []).getD 0 0 =
         (runGates Gate.depthStep [] (compile c)).getD 0 0 := by simp
     rw [this]; omega
-  | @and k cs ih | @or k cs ih | @oracle k cs ih =>
+  | @gate op k cs ih =>
     rw [compile, run_blocks stepLocal_depth cs _ 0]
     simp only [Gate.depthStep, depth]
     have : ((topWires (List.ofFn fun i => compile (cs i)) k).map (Gate.argDepth
@@ -512,7 +485,7 @@ lemma length_compile (c : Circuit n) : (compile c).length = c.size := by
   induction c with
   | input i => simp [compile, size]
   | not c ih => simp [compile, size, ih]
-  | @and k cs ih | @or k cs ih | @oracle k cs ih =>
+  | @gate op k cs ih =>
     simp [compile, size, List.length_flatten, List.map_ofFn, Function.comp_def, ih,
       List.sum_ofFn]
 
@@ -525,7 +498,7 @@ lemma wireCount_compile (c : Circuit n) : wireCount (compile c) + 1 ≤ 2 * c.si
   | not c ih =>
     simp only [compile, wireCount, List.map_append, List.sum_append] at ih ⊢
     simp [size]; omega
-  | @and k cs ih | @or k cs ih | @oracle k cs ih =>
+  | @gate op k cs ih =>
     simp only [compile, wireCount, List.map_append, List.sum_append, List.map_flatten,
       List.sum_flatten, List.map_ofFn, Function.comp_def, List.sum_ofFn, size] at ih ⊢
     simp only [List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, topWires,

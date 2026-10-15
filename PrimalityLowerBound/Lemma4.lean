@@ -130,12 +130,12 @@ lemma eval_resGate (n j r : ℕ) (hj : 1 ≤ j) (hr : r < oddPrime j) (z : Fin n
   simp [hj, hjm]
 
 lemma size_resGate_le (n j r : ℕ) : (resGate n j r).size ≤ 2 * resLen n j r + 1 := by
-  refine (size_oracle_le _ (s := 1) fun i => ?_).trans (by simp)
+  refine (size_gate_le _ _ (s := 1) fun i => ?_).trans (by simp)
   simp only [resQuery]
   split_ifs <;> simp [size, size_const]
 
 lemma depth_resGate_le (n j r : ℕ) : (resGate n j r).depth ≤ 2 := by
-  refine depth_oracle_le _ fun i => ?_
+  refine depth_gate_le _ _ fun i => ?_
   simp only [resQuery]
   split_ifs <;> simp [depth, depth_const]
 

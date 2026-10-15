@@ -61,9 +61,6 @@ lemma oddPrime_two : oddPrime 2 = 5 := nth_prime_two_eq_five
 
 lemma oddPrime_le (j : ℕ) : oddPrime j ≤ 8 * (j + 1) ^ 2 := nth_prime_le j
 
-lemma oddPrime_odd {j : ℕ} (hj : 1 ≤ j) : Odd (oddPrime j) :=
-  (oddPrime_prime j).odd_of_ne_two (by have := three_le_oddPrime hj; omega)
-
 lemma two_pow_pred_modEq_one {j : ℕ} (hj : 1 ≤ j) :
     2 ^ (oddPrime j - 1) ≡ 1 [MOD oddPrime j] := by
   have hp := oddPrime_prime j
