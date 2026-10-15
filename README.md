@@ -32,7 +32,8 @@ and declares no axioms. `#print axioms` on every main theorem shows only `propex
 | Theorem 1: `TC⁰ ⊆ AC⁰[GCD]` | `tc0_subset_ac0_gcd`, `tc0DAG_subset_ac0DAG_gcd` |
 | Theorem 1: `TC⁰ ⊆ AC⁰[Square-Free]` | `tc0_subset_ac0_squarefree`, `tc0DAG_subset_ac0DAG_squarefree` |
 | Theorem 1: `TC⁰ ⊆ AC⁰[Primes]` | `tc0_subset_ac0_primes`, `tc0DAG_subset_ac0DAG_primes` |
-| Corollary 2: GCD, Square-Free and Primes not in `AC⁰[p]` | `gcd_not_mem_ac0DAG_mod`, `squarefree_not_mem_ac0DAG_mod`, `primes_not_mem_ac0DAG_mod` |
+| Corollary 2: any `A` with `mult ≤ᵀ A` is not in `AC⁰[p]` | `not_mem_ac0_mod_of_mult_reduces` |
+| Corollary 2: GCD, Square-Free and Primes not in `AC⁰[p]` | `gcd_not_mem_ac0_mod`, `squarefree_not_mem_ac0_mod`, `primes_not_mem_ac0_mod`, and the DAG versions `gcd_not_mem_ac0DAG_mod`, `squarefree_not_mem_ac0DAG_mod`, `primes_not_mem_ac0DAG_mod` |
 | Corollary 2: GCD, Square-Free and Primes size `≥ 2^(N^δ)` | `gcd_exp_lower_bound`, `squarefree_exp_lower_bound`, `primes_exp_lower_bound` |
 | Transitivity of `≤ᵀ` | `Reduces.trans` |
 
@@ -85,7 +86,9 @@ on at most a `1/n` fraction of inputs.
 The locally adapted polynomial obstruction then gives size at least `2^t` on a polynomial
 sequence of input lengths. Zero-padding and interpolation extend this to all large lengths in
 `smolensky_formula_exp_bound`. Unfolding DAGs into formulas gives `smolenskyExpTheorem`.
-The reductions for Corollary 2 apply the formula bound directly to the composed formula.
+The exponential bounds of Corollary 2 apply the formula bound directly to the composed
+formula. The qualitative Corollary 2 instead uses `smolenskyTheorem` and transitivity of
+reductions.
 
 The quantitative Primes, GCD and square-free lower bounds are unconditional.
 Their axiom dependencies are only `propext`, `Classical.choice` and `Quot.sound`.

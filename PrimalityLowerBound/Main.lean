@@ -10,7 +10,10 @@ import PrimalityLowerBound.Quantitative
 * **Theorem 1.** `TC⁰ ⊆ AC⁰[GCD]`, `TC⁰ ⊆ AC⁰[Square-Free]` and
   `TC⁰ ⊆ AC⁰[Primes]`.
 * **Corollary 2.** `Primes`, `GCD` and `Square-Free` are not in `AC⁰[p]` for any prime `p`.
-  These follow from the reductions above and `smolenskyTheorem` in `Quantitative.lean`.
+  These follow from `not_mem_ac0_mod_of_mult_reduces`, which combines `smolenskyTheorem`
+  (`Quantitative.lean`) with the reductions `Mod_q ≤ᵀ mult` (`Lemma4.lean`) and
+  `mult ≤ᵀ GCD`, `mult ≤ᵀ Square-Free`, `mult ≤ᵀ Primes` (`GCD.lean`, `SquareFree.lean`,
+  `Primes.lean`).
 
 Both are stated for the formula model (`AC0`) and for the DAG-circuit model of the paper
 (`AC0DAG`); the two models coincide (`AC0DAG_eq`).
@@ -92,14 +95,17 @@ theorem primes_not_mem_ac0_mod {p : ℕ}
 
 /-! ### Corollary 2 in the DAG-circuit model -/
 
+/-- **Corollary 2** (GCD), DAG model: `GCD ∉ AC⁰[p]` for every prime `p`. -/
 theorem gcd_not_mem_ac0DAG_mod {p : ℕ} (hp : p.Prime) :
     GCD ∉ AC0DAG (ModLang p) := by
   rw [AC0DAG_eq]; exact gcd_not_mem_ac0_mod hp
 
+/-- **Corollary 2** (Square-Free), DAG model: `Square-Free ∉ AC⁰[p]` for every prime `p`. -/
 theorem squarefree_not_mem_ac0DAG_mod {p : ℕ} (hp : p.Prime) :
     SquareFree ∉ AC0DAG (ModLang p) := by
   rw [AC0DAG_eq]; exact squarefree_not_mem_ac0_mod hp
 
+/-- **Corollary 2** (Primes), DAG model: `Primes ∉ AC⁰[p]` for every prime `p`. -/
 theorem primes_not_mem_ac0DAG_mod {p : ℕ}
     (hp : p.Prime) : Primes ∉ AC0DAG (ModLang p) := by
   rw [AC0DAG_eq]; exact primes_not_mem_ac0_mod hp
