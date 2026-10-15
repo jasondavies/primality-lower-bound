@@ -150,33 +150,34 @@ lemma transfer {A B L' : Lang} {dR cR N n : ℕ} (R : Circuit n) (hRd : R.depth 
 
 /-! ### Asymptotics -/
 
-lemma eventually_three_mul_le {γ : ℝ} (hγ : 0 < γ) :
-    ∀ᶠ N : ℕ in Filter.atTop, (3 * N : ℝ) ≤ (2 : ℝ) ^ ((N : ℝ) ^ γ / 4) := by
+lemma eventually_pow_le (a : ℕ) {γ : ℝ} (hγ : 0 < γ) :
+    ∀ᶠ N : ℕ in Filter.atTop, (N : ℝ) ^ a ≤ (2 : ℝ) ^ ((N : ℝ) ^ γ / 4) := by
   have hl2 : 0 < Real.log 2 := Real.log_pos (by norm_num)
-  have h1 := (isLittleO_log_rpow_atTop hγ).bound (c := Real.log 2 / 8) (by positivity)
-  have h2 := (tendsto_rpow_atTop hγ).eventually_ge_atTop (8 * Real.log 3 / Real.log 2)
-  have h3 := Filter.eventually_ge_atTop (1 : ℝ)
-  filter_upwards [tendsto_natCast_atTop_atTop.eventually (h1.and (h2.and h3))] with N hN
-  obtain ⟨hb, hge, h1N⟩ := hN
-  have hNpos : (0 : ℝ) < N := by linarith
-  have hlogN : Real.log N ≤ Real.log 2 / 8 * (N : ℝ) ^ γ := by
+  have h1 := (isLittleO_log_rpow_atTop hγ).bound
+    (c := Real.log 2 / (4 * ((a : ℝ) + 1))) (by positivity)
+  filter_upwards [tendsto_natCast_atTop_atTop.eventually
+    (h1.and (Filter.eventually_ge_atTop (1 : ℝ)))] with N hN
+  obtain ⟨hb, h1N⟩ := hN
+  have hlogN : Real.log N ≤ Real.log 2 / (4 * ((a : ℝ) + 1)) * (N : ℝ) ^ γ := by
     rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_of_nonneg (Real.log_nonneg h1N),
       abs_of_nonneg (by positivity)] at hb
     exact hb
-  have hlog3 : Real.log 3 ≤ Real.log 2 / 8 * (N : ℝ) ^ γ := by
-    rw [div_le_iff₀ hl2] at hge
-    nlinarith
+  have hbound : (a : ℝ) * Real.log N ≤ Real.log 2 * ((N : ℝ) ^ γ / 4) := by
+    have := (le_div_iff₀ (by positivity : (0 : ℝ) < 4 * ((a : ℝ) + 1))).1
+      (show Real.log N ≤ Real.log 2 * (N : ℝ) ^ γ / (4 * ((a : ℝ) + 1)) by
+        convert hlogN using 1; ring)
+    nlinarith [Real.log_nonneg h1N]
   rw [Real.rpow_def_of_pos (by norm_num : (0 : ℝ) < 2)]
-  calc (3 * N : ℝ) = Real.exp (Real.log (3 * N)) := (Real.exp_log (by positivity)).symm
+  calc (N : ℝ) ^ a = Real.exp (Real.log ((N : ℝ) ^ a)) :=
+      (Real.exp_log (by positivity)).symm
     _ ≤ Real.exp (Real.log 2 * ((N : ℝ) ^ γ / 4)) := by
-        apply Real.exp_le_exp.2
-        rw [Real.log_mul (by norm_num) hNpos.ne']
-        nlinarith
+      apply Real.exp_le_exp.2
+      simpa only [Real.log_pow] using hbound
 
-/-- The arithmetic core of the quantitative corollary. -/
-lemma asymptotic_core (c E n₀ : ℕ) (hc : 1 ≤ c) {δ : ℝ} (hδ : 0 < δ) :
+/-- Interpolate bounds on polynomially spaced lengths, absorbing a polynomial factor. -/
+lemma asymptotic_core_mul (c a E n₀ : ℕ) (hc : 1 ≤ c) {δ : ℝ} (hδ : 0 < δ) :
     ∃ δ' : ℝ, 0 < δ' ∧ ∃ N₀ : ℕ, ∀ N ≥ N₀, ∀ S : ℕ,
-      (∀ n ≥ n₀, (n + 2) ^ c ≤ N → (2 : ℝ) ^ ((n : ℝ) ^ δ) ≤ 3 * ((n + 2) ^ c : ℕ) * (S + 2) ^ E) →
+      (∀ n ≥ n₀, (n + 2) ^ c ≤ N → (2 : ℝ) ^ ((n : ℝ) ^ δ) ≤ ((n + 2) ^ a : ℕ) * (S + 2) ^ E) →
       (2 : ℝ) ^ ((N : ℝ) ^ δ') ≤ S := by
   set δ₁ := min δ 1
   have hδ₁ : 0 < δ₁ := lt_min hδ one_pos
@@ -188,9 +189,9 @@ lemma asymptotic_core (c E n₀ : ℕ) (hc : 1 ≤ c) {δ : ℝ} (hδ : 0 < δ) 
   have hA := (tendsto_rpow_atTop (inv_pos.2 hcr)).eventually_ge_atTop ((n₀ : ℝ) + 6)
   have hC := (tendsto_rpow_atTop (half_pos hγ)).eventually_ge_atTop (4 * (E' : ℝ) + 1)
   obtain ⟨N₀, hN₀⟩ := Filter.eventually_atTop.1
-    ((tendsto_natCast_atTop_atTop.eventually (hA.and hC)).and (eventually_three_mul_le hγ))
+    ((tendsto_natCast_atTop_atTop.eventually (hA.and hC)).and (eventually_pow_le a hγ))
   refine ⟨max N₀ 1, fun N hN S hS => ?_⟩
-  obtain ⟨⟨hrN, htN⟩, h3N⟩ := hN₀ N (le_of_max_le_left hN)
+  obtain ⟨⟨hrN, htN⟩, hpolyN⟩ := hN₀ N (le_of_max_le_left hN)
   have hN1 : (1 : ℝ) ≤ N := by exact_mod_cast le_of_max_le_right hN
   have hN0 : (0 : ℝ) ≤ N := by linarith
   set r := (N : ℝ) ^ ((c : ℝ)⁻¹) with hr
@@ -244,11 +245,15 @@ lemma asymptotic_core (c E n₀ : ℕ) (hc : 1 ≤ c) {δ : ℝ} (hδ : 0 < δ) 
       rw [← Real.rpow_add (by norm_num)]; ring_nf
     have e2 : (2 : ℝ) ^ ((N : ℝ) ^ γ / 2) ≤ (2 : ℝ) ^ ((n : ℝ) ^ δ) :=
       Real.rpow_le_rpow_of_exponent_le (by norm_num) hnδ
-    have e3 : 3 * (m : ℝ) ^ c * ((S : ℝ) + 2) ^ E ≤ (2 : ℝ) ^ ((N : ℝ) ^ γ / 4) * ((S : ℝ) + 2) ^ E' := by
-      have : 3 * (m : ℝ) ^ c ≤ 3 * N := by linarith
-      calc 3 * (m : ℝ) ^ c * ((S : ℝ) + 2) ^ E ≤ 3 * N * ((S : ℝ) + 2) ^ E' := by
-            gcongr
-        _ ≤ _ := by gcongr
+    have hmN : (m : ℝ) ≤ N := by
+      have hm1 : (1 : ℝ) ≤ m := by exact_mod_cast (show 1 ≤ m by omega)
+      calc (m : ℝ) = (m : ℝ) ^ 1 := (pow_one _).symm
+        _ ≤ (m : ℝ) ^ c := pow_le_pow_right₀ hm1 hc
+        _ ≤ N := hmc
+    have e3 : (m : ℝ) ^ a * ((S : ℝ) + 2) ^ E ≤
+        (2 : ℝ) ^ ((N : ℝ) ^ γ / 4) * ((S : ℝ) + 2) ^ E' := by
+      exact mul_le_mul ((pow_le_pow_left₀ (by positivity) hmN a).trans hpolyN)
+        hpowE (by positivity) (by positivity)
     have hpos : (0 : ℝ) < (2 : ℝ) ^ ((N : ℝ) ^ γ / 4) := by positivity
     have := e2.trans (key.trans e3)
     rw [e1] at this
@@ -279,6 +284,40 @@ lemma asymptotic_core (c E n₀ : ℕ) (hc : 1 ≤ c) {δ : ℝ} (hδ : 0 < δ) 
   show (2 : ℝ) ^ t ≤ S
   linarith
 
+/-- Interpolate bounds on polynomially spaced lengths without a polynomial factor. -/
+lemma asymptotic_core (c E n₀ : ℕ) (hc : 1 ≤ c) {δ : ℝ} (hδ : 0 < δ) :
+    ∃ δ' : ℝ, 0 < δ' ∧ ∃ N₀ : ℕ, ∀ N ≥ N₀, ∀ S : ℕ,
+      (∀ n ≥ n₀, (n + 2) ^ c ≤ N →
+        (2 : ℝ) ^ ((n : ℝ) ^ δ) ≤ (S + 2) ^ E) →
+      (2 : ℝ) ^ ((N : ℝ) ^ δ') ≤ S := by
+  simpa using asymptotic_core_mul c 0 E n₀ hc hδ
+
+/-- Extend the sequence bound to all large lengths, allowing a polynomial size bound
+in an auxiliary parameter `S`. This applies directly to formulas and to unfolded DAGs. -/
+theorem smolensky_formula_exp_bound (p q d E : ℕ)
+    (hp : p.Prime) (hq : q.Prime) (hpq : p ≠ q) :
+    ∃ δ : ℝ, 0 < δ ∧ ∃ N₀ : ℕ, ∀ N ≥ N₀, ∀ C : Circuit N,
+      C.depth ≤ d → (∀ x, C.eval (ModLang p) x = ModLang q N x) →
+      ∀ S : ℕ, C.size ≤ (S + 2) ^ E → (2 : ℝ) ^ ((N : ℝ) ^ δ) ≤ S := by
+  obtain ⟨c, hc, t₀, hlow⟩ := SmolenskyQuantitative.power_lower_bound p q (d + 1)
+    hp hq.one_lt ((Nat.coprime_primes hq hp).2 (Ne.symm hpq))
+  obtain ⟨δ, hδ, N₀, hN₀⟩ := asymptotic_core c E t₀ hc (δ := 1) (by norm_num)
+  refine ⟨δ, hδ, N₀, fun N hN C hCd hCe S hCs => hN₀ N hN S ?_⟩
+  intro t ht htN
+  obtain ⟨π, hπ⟩ := modLang_projects q htN
+  let C' := C.subst fun i => wire (π i)
+  have hC'd : C'.depth ≤ d + 1 :=
+    (depth_subst_le _ (fun _ => depth_wire_le _) C).trans (by omega)
+  have hC's : C'.size ≤ C.size := by
+    simpa [C'] using size_subst_le (fun i => wire (π i))
+      (fun _ => (size_wire _).le) (by omega : 1 ≤ 1) C
+  have hC'e : ∀ x, C'.eval (ModLang p) x = ModLang q ((t + 2) ^ c) x := by
+    intro x
+    simpa only [C', eval_subst, eval_wire, hCe] using hπ x
+  have hsize := (hlow t ht C' hC'd hC'e).trans (hC's.trans hCs)
+  simpa only [Real.rpow_one, Real.rpow_natCast] using
+    (show (2 : ℝ) ^ t ≤ ((S : ℝ) + 2) ^ E by exact_mod_cast hsize)
+
 /-! ### The quantitative corollary -/
 
 /-- Smolensky's theorem [Smo87], quantitative form, for DAG circuits: for distinct primes `p`,
@@ -293,34 +332,11 @@ def SmolenskyExpTheorem : Prop :=
 /-- Quantitative Smolensky, using the individual-formula approximation bound and padding. -/
 theorem smolenskyExpTheorem : SmolenskyExpTheorem := by
   intro p q hp hq hpq d
-  obtain ⟨c, hc, t₀, hlow⟩ := SmolenskyQuantitative.power_lower_bound p q (d + 2)
-    hp hq.one_lt ((Nat.coprime_primes hq hp).2 (Ne.symm hpq))
-  obtain ⟨δ, hδ, N₀, hN₀⟩ := asymptotic_core c (d + 1) t₀ hc (δ := 1) (by norm_num)
-  refine ⟨δ, hδ, N₀, fun N hN D hDd hDe => hN₀ N hN D.size ?_⟩
-  intro t ht htN
-  let M := (t + 2) ^ c
-  let C := D.toCircuit.subst fun i => wire (zeroPad M N i)
-  have hCd : C.depth ≤ d + 2 :=
-    (depth_subst_le _ (fun _ => depth_wire_le _) D.toCircuit).trans
-      (by have := D.toCircuit_bounds.2; omega)
-  have hCs : C.size ≤ D.toCircuit.size := by
-    simpa [C] using size_subst_le (fun i => wire (zeroPad M N i))
-      (fun _ => (size_wire _).le) (by omega : 1 ≤ 1) D.toCircuit
-  have hCe : ∀ x, C.eval (ModLang p) x = ModLang q M x := by
-    intro x
-    simp only [C, eval_subst, eval_wire, DAG.eval_toCircuit, hDe, ModLang]
-    rw [ones_zeroPad (show M ≤ N from htN)]
-  have hsize : 2 ^ t ≤ (D.size + 2) ^ (d + 1) :=
-    (hlow t ht C hCd hCe).trans (hCs.trans (D.toCircuit_bounds.1.trans
-      (Nat.pow_le_pow_right (by omega) (by omega))))
-  have hreal : (2 : ℝ) ^ t ≤ ((D.size : ℝ) + 2) ^ (d + 1) := by exact_mod_cast hsize
-  simp only [Real.rpow_one, Real.rpow_natCast]
-  calc
-    (2 : ℝ) ^ t ≤ ((D.size : ℝ) + 2) ^ (d + 1) := hreal
-    _ ≤ 3 * ((t + 2) ^ c : ℕ) * ((D.size : ℝ) + 2) ^ (d + 1) := by
-      have hM : (1 : ℝ) ≤ ((t + 2) ^ c : ℕ) := by
-        exact_mod_cast (Nat.one_le_pow c (t + 2) (by omega))
-      nlinarith [show (0 : ℝ) ≤ ((D.size : ℝ) + 2) ^ (d + 1) by positivity]
+  obtain ⟨δ, hδ, N₀, hN₀⟩ := smolensky_formula_exp_bound p q (d + 1) (d + 1) hp hq hpq
+  refine ⟨δ, hδ, N₀, fun N hN D hDd hDe => ?_⟩
+  apply hN₀ N hN D.toCircuit (D.toCircuit_bounds.2.trans (by omega))
+    (fun x => by rw [DAG.eval_toCircuit, hDe]) D.size
+  exact D.toCircuit_bounds.1.trans (Nat.pow_le_pow_right (by omega) (by omega))
 
 /-- If `mult ≤ᵀ A` and `A` on shorter (valid) lengths is a projection of `A` on longer valid
 lengths, then bounded-depth `Mod_p` circuits for `A` need size `2^(N^δ)`. -/
@@ -335,30 +351,24 @@ theorem exp_lower_bound_of_reduces {A : Lang} (V : ℕ → Prop)
   set cR := cR₀ + 1
   have hRs' : ∀ n, (R n).size ≤ (n + 2) ^ cR := fun n =>
     (hRs n).trans (Nat.pow_le_pow_right (by omega) (by omega))
-  obtain ⟨δ₀, hδ₀, n₀, hsm⟩ := smolenskyExpTheorem p q hp hq (Ne.symm hqp) (dR * (d + 3) + 1)
+  obtain ⟨δ₀, hδ₀, n₀, hsm⟩ := smolensky_formula_exp_bound p q (dR * (d + 3)) 1 hp hq (Ne.symm hqp)
   set E := (d + 1) * dR
-  obtain ⟨δ', hδ', N₀, hN₀⟩ := asymptotic_core cR E n₀ (by omega) hδ₀
+  obtain ⟨δ', hδ', N₀, hN₀⟩ := asymptotic_core_mul cR cR E n₀ (by omega) hδ₀
   refine ⟨δ', hδ', N₀, fun N hN hV D hDd hDe => hN₀ N hN D.size fun n hn hnN => ?_⟩
   obtain ⟨hFs, hFd⟩ := D.toCircuit_bounds
   have hFe : ∀ x, D.toCircuit.eval (ModLang p) x = A N x := fun x => by
     rw [D.eval_toCircuit, hDe]
   obtain ⟨C', hC'd, hC's, hC'e⟩ :=
     transfer (R n) (hRd n) (hRs' n) (hRe n) (hproj N hV) D.toCircuit hFe hnN
-  have hdepth : C'.toDAG.depth ≤ dR * (d + 3) + 1 := by
-    refine C'.toDAG_depth.trans ?_
-    have : dR * (D.toCircuit.depth + 2) ≤ dR * (d + 3) := Nat.mul_le_mul_left _ (by omega)
-    omega
-  have hdag := hsm n hn C'.toDAG hdepth fun x => by rw [C'.toDAG_eval, hC'e]
-  have hsize : C'.toDAG.size ≤ 3 * (n + 2) ^ cR * (D.size + 2) ^ E := by
-    calc C'.toDAG.size ≤ 3 * C'.size := C'.toDAG_size
-      _ ≤ 3 * ((n + 2) ^ cR * D.toCircuit.size ^ dR) := by omega
-      _ ≤ 3 * ((n + 2) ^ cR * ((D.size + 2) ^ (D.depth + 1)) ^ dR) := by gcongr
-      _ ≤ 3 * ((n + 2) ^ cR * ((D.size + 2) ^ (d + 1)) ^ dR) := by
-          gcongr
-      _ = 3 * (n + 2) ^ cR * (D.size + 2) ^ E := by rw [← pow_mul]; ring
-  have : (C'.toDAG.size : ℝ) ≤ 3 * ((n + 2) ^ cR : ℕ) * ((D.size : ℝ) + 2) ^ E := by
-    exact_mod_cast hsize
-  linarith
+  have hdepth : C'.depth ≤ dR * (d + 3) :=
+    hC'd.trans (Nat.mul_le_mul_left _ (by omega))
+  have hformula := hsm n hn C' hdepth hC'e C'.size (by simp)
+  have hsize : C'.size ≤ (n + 2) ^ cR * (D.size + 2) ^ E := by
+    calc C'.size ≤ (n + 2) ^ cR * D.toCircuit.size ^ dR := hC's
+      _ ≤ (n + 2) ^ cR * ((D.size + 2) ^ (D.depth + 1)) ^ dR := by gcongr
+      _ ≤ (n + 2) ^ cR * ((D.size + 2) ^ (d + 1)) ^ dR := by gcongr
+      _ = (n + 2) ^ cR * (D.size + 2) ^ E := by rw [← pow_mul]
+  exact hformula.trans (by exact_mod_cast hsize)
 
 /-- **Corollary 2** (Primes, quantitative): for
 every prime `p` and depth `d`, depth-`d` circuits with `Mod_p` gates for `Primes` on `N` bits

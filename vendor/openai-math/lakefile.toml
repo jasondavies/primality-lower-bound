@@ -1,3 +1,5 @@
+# Parent-project-only package: build from the repository root.
+# Uses the parent's pinned Lean v4.34.0 and Mathlib v4.34.0.
 name = "page_analytic"
 version = "0.1.0"
 

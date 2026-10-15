@@ -297,7 +297,7 @@ theorem power_lower_bound (p r d : ℕ) (hp : p.Prime) (hr : 1 < r)
       have he : ∀ x : Fin M → Bool, F.eval (List.ofFn x) = modFunction r x := by
         intro x
         rw [show F = C.toACC p from rfl, Circuit.eval_toACC, hCe]
-        simp [ModLang, modFunction, Circuit.ones_eq_fin_sum, Nat.dvd_iff_mod_eq_zero]
+        simp [ModLang, modFunction, ones_eq_fin_sum, Nat.dvd_iff_mod_eq_zero]
         rfl
       exact (congrArg (fun m => ∀ x : Fin m → Bool,
         F.eval (List.ofFn x) = modFunction r x) hnr).mpr he x

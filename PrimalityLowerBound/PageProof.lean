@@ -62,10 +62,7 @@ private lemma thetaError_tendsto (M : ℝ) :
   have h1 := tendsto_const_div_pow (M / Real.log 2 ^ 4) 3 (by decide)
   have h2 := tendsto_pow_const_div_const_pow_of_one_lt 3 (by norm_num : (1 : ℝ) < 2)
   have h3 := (tendsto_pow_const_div_const_pow_of_one_lt 2
-    (show (1 : ℝ) < Real.sqrt 2 by
-      have := Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 2)
-      have := Real.sqrt_nonneg (2 : ℝ)
-      nlinarith)).const_mul (2 * Real.log 2)
+    Real.one_lt_sqrt_two).const_mul (2 * Real.log 2)
   convert (h1.add h2).add h3 using 1 <;> first | rfl | norm_num
 
 /-- The weighted prime count has the required asymptotic, uniformly for prime moduli `p ≤ n`. -/

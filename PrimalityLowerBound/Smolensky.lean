@@ -7,7 +7,7 @@ import ACC.LowerBounds.Smolensky.Formula
 
 Translate PLB formulas into the ACC formulas of `formalcs/circuit-complexity`, preserving
 semantics and node count and bounding depth and input indices. The upstream qualitative
-lower bound then supplies the hypothesis previously used by the main results.
+lower bound proves that `Mod_q` is outside AC⁰[Mod_p] for distinct primes `p` and `q`.
 See `vendor/circuit-complexity/UPSTREAM.md` for provenance.
 -/
 
@@ -26,12 +26,6 @@ def toACC (p : ℕ) : Circuit n → ACCFormula p
   | gate .and cs => .andGate (List.ofFn fun i => (cs i).toACC p)
   | gate .or cs => .orGate (List.ofFn fun i => (cs i).toACC p)
   | gate .oracle cs => .modGate (List.ofFn fun i => (cs i).toACC p)
-
-lemma ones_eq_fin_sum (x : Fin n → Bool) : ones x = ∑ i, (x i).toNat := by
-  rw [ones, Finset.card_filter]
-  apply Finset.sum_congr rfl
-  intro i _
-  cases x i <;> simp
 
 lemma eval_toACC (c : Circuit n) (x : Fin n → Bool) :
     (c.toACC p).eval (List.ofFn x) = c.eval (ModLang p) x := by
@@ -119,6 +113,6 @@ theorem smolenskyTheorem : SmolenskyTheorem := by
   intro n x
   change ((C n).toACC p).eval (List.ofFn x) = modFunction q x
   rw [Circuit.eval_toACC, hCe]
-  simp [ModLang, modFunction, Circuit.ones_eq_fin_sum, Nat.dvd_iff_mod_eq_zero]
+  simp [ModLang, modFunction, ones_eq_fin_sum, Nat.dvd_iff_mod_eq_zero]
 
 end PLB

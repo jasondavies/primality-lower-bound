@@ -115,11 +115,16 @@ lemma valFrom_lt {n : ℕ} (z : Fin n → Bool) (s len : ℕ) : valFrom z s len 
 /-- Number of ones in a bit string. -/
 def ones {n : ℕ} (z : Fin n → Bool) : ℕ := (Finset.univ.filter fun i => z i = true).card
 
+lemma ones_eq_fin_sum {n : ℕ} (z : Fin n → Bool) : ones z = ∑ i, (z i).toNat := by
+  rw [ones, Finset.card_filter]
+  apply Finset.sum_congr rfl
+  intro i _
+  cases z i <;> simp
+
 lemma ones_eq_sum {n : ℕ} (z : Fin n → Bool) :
     ones z = ∑ i ∈ Finset.range n, (getD z i).toNat := by
-  rw [ones, Finset.card_filter, ← Fin.sum_univ_eq_sum_range (fun i => (getD z i).toNat)]
-  congr 1; funext i
-  cases h : z i <;> simp [h]
+  rw [ones_eq_fin_sum, ← Fin.sum_univ_eq_sum_range (fun i => (getD z i).toNat)]
+  simp
 
 lemma ones_le {n : ℕ} (z : Fin n → Bool) : ones z ≤ n := by
   calc ones z ≤ (Finset.univ : Finset (Fin n)).card := Finset.card_filter_le _ _

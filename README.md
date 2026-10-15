@@ -23,20 +23,18 @@ and declares no axioms. `#print axioms` on every main theorem shows only `propex
 
 ## What is proved
 
-| Paper | Lean | Assumptions |
-|---|---|---|
-| Lemma 4: `Maj ≤ᵀ mult` | `maj_reduces_mult` | none |
-| Lemma 5.1: `mult ≤ᵀ GCD` | `mult_reduces_gcd` | none |
-| Lemma 5.2: `mult ≤ᵀ Primes` | `mult_reduces_primes` | none |
-| Lemma 5.3: `mult ≤ᵀ Square-Free` | `mult_reduces_squarefree` | none |
-| Theorem 1: `TC⁰ ⊆ AC⁰[GCD]` | `tc0_subset_ac0_gcd`, `tc0DAG_subset_ac0DAG_gcd` | none |
-| Theorem 1: `TC⁰ ⊆ AC⁰[Square-Free]` | `tc0_subset_ac0_squarefree`, `tc0DAG_subset_ac0DAG_squarefree` | none |
-| Theorem 1: `TC⁰ ⊆ AC⁰[Primes]` | `tc0_subset_ac0_primes`, `tc0DAG_subset_ac0DAG_primes` | none |
-| Corollary 2: GCD and Square-Free not in `AC⁰[p]` | `gcd_not_mem_ac0DAG_mod`, `squarefree_not_mem_ac0DAG_mod` | none |
-| Corollary 2: Primes not in `AC⁰[p]` | `primes_not_mem_ac0DAG_mod` | none |
-| Corollary 2: GCD and Square-Free size `≥ 2^(N^δ)` | `gcd_exp_lower_bound`, `squarefree_exp_lower_bound` | none |
-| Corollary 2: Primes size `≥ 2^(N^δ)` | `primes_exp_lower_bound` | none |
-| Transitivity of `≤ᵀ` | `Reduces.trans` | none |
+| Paper | Lean |
+|---|---|
+| Lemma 4: `Maj ≤ᵀ mult` | `maj_reduces_mult` |
+| Lemma 5.1: `mult ≤ᵀ GCD` | `mult_reduces_gcd` |
+| Lemma 5.2: `mult ≤ᵀ Primes` | `mult_reduces_primes` |
+| Lemma 5.3: `mult ≤ᵀ Square-Free` | `mult_reduces_squarefree` |
+| Theorem 1: `TC⁰ ⊆ AC⁰[GCD]` | `tc0_subset_ac0_gcd`, `tc0DAG_subset_ac0DAG_gcd` |
+| Theorem 1: `TC⁰ ⊆ AC⁰[Square-Free]` | `tc0_subset_ac0_squarefree`, `tc0DAG_subset_ac0DAG_squarefree` |
+| Theorem 1: `TC⁰ ⊆ AC⁰[Primes]` | `tc0_subset_ac0_primes`, `tc0DAG_subset_ac0DAG_primes` |
+| Corollary 2: GCD, Square-Free and Primes not in `AC⁰[p]` | `gcd_not_mem_ac0DAG_mod`, `squarefree_not_mem_ac0DAG_mod`, `primes_not_mem_ac0DAG_mod` |
+| Corollary 2: GCD, Square-Free and Primes size `≥ 2^(N^δ)` | `gcd_exp_lower_bound`, `squarefree_exp_lower_bound`, `primes_exp_lower_bound` |
+| Transitivity of `≤ᵀ` | `Reduces.trans` |
 
 ### Formalised Page estimate
 
@@ -57,9 +55,8 @@ uniformly for `p ≤ n`. Splitting the primes at `rⁿ`, where `1 < r < 2` is ch
 close to `2`, removes the logarithmic weights: the small-prime contribution tends to zero,
 and the large-prime weights lie between `n log r` and `n log 2`.
 
-All primality results now use this proof directly and no longer take a `PageEstimate`
-argument. Page and both Smolensky results depend only on `propext`, `Classical.choice`, and
-`Quot.sound`; no external theorem hypotheses remain in the main results.
+All primality results use this proof directly. Page and both Smolensky results depend only
+on `propext`, `Classical.choice`, and `Quot.sound`; the main results are unconditional.
 
 ### Formalised qualitative Smolensky theorem
 
@@ -72,8 +69,8 @@ The required 34 source modules are vendored with their Apache-2.0 license;
 The bridge translates PLB formulas to upstream ACC formulas, proves equality of evaluations
 and node counts, and bounds depth and input indices. It then applies the upstream lower bound
 and the existing DAG/formula equivalence. Its axiom dependencies are only `propext`,
-`Classical.choice` and `Quot.sound`. The six qualitative `*_not_mem_ac0*_mod` theorems no longer
-take a `SmolenskyTheorem` argument.
+`Classical.choice` and `Quot.sound`. The six qualitative `*_not_mem_ac0*_mod` theorems
+apply this proof directly.
 
 ### Formalised quantitative Smolensky theorem
 
@@ -83,12 +80,12 @@ lower bound for individual DAG circuits, uniformly over all sufficiently large i
 `n ≥ 1` inputs, of size at most `B` with `n ≤ B`: degree `O((log B)^(8d+1))`, with error
 on at most a `1/n` fraction of inputs.
 The upstream polynomial obstruction then gives size at least `2^t` on a polynomial sequence
-of input lengths. Zero-padding and the existing asymptotic argument extend this to all large
-lengths and convert formula size to DAG size.
+of input lengths. Zero-padding and interpolation extend this to all large lengths in
+`smolensky_formula_exp_bound`. Unfolding DAGs into formulas gives `smolenskyExpTheorem`.
+The reductions for Corollary 2 apply the formula bound directly to the composed formula.
 
-The quantitative Primes, GCD and square-free lower bounds are unconditional. These theorems
-no longer take a `SmolenskyExpTheorem` or `PageEstimate` argument. Their axiom dependencies are only `propext`,
-`Classical.choice` and `Quot.sound`.
+The quantitative Primes, GCD and square-free lower bounds are unconditional.
+Their axiom dependencies are only `propext`, `Classical.choice` and `Quot.sound`.
 
 ## Circuit model
 

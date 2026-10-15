@@ -1,3 +1,9 @@
+/-
+Local modification for Lean/Mathlib 4.34.0: removed a redundant `norm_num` after
+`gcongr`, which closes the goal itself. No theorem statements changed.
+See ../../../UPSTREAM.md for the upstream revision and license provenance.
+-/
+
 import ACC.LowerBounds.Smolensky.Restriction
 import ACC.Formula.Semantics
 import ACC.Functions.Mod
