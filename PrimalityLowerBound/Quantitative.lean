@@ -1,11 +1,12 @@
 import PrimalityLowerBound.Main
+import PrimalityLowerBound.SmolenskyQuantitative
 
 /-!
 # Corollary 2, quantitative form
 
-Assuming the quantitative form of Smolensky's theorem (depth-`d` circuits with `Mod_p` gates
-for `Mod_q` need size `2^(n^δ)`), every bounded-depth circuit family with `Mod_p` gates for
-`Primes`, `GCD` or `Square-Free` has size `2^(N^δ)` for some `δ > 0`.
+We prove quantitative Smolensky from the explicit formula approximation bounds. Consequently,
+bounded-depth circuits with `Mod_p` gates for `GCD` or `Square-Free` need size `2^(N^δ)` for
+some `δ > 0`. The result for `Primes` still assumes `PageEstimate`.
 
 The argument: a circuit for the language on `N` input bits also decides it on fewer bits (by
 padding), so composing the reduction `Mod_q ≤ᵀ mult ≤ᵀ A` with it yields a circuit for `Mod_q`
@@ -24,6 +25,25 @@ def Projects (A : Lang) (k N : ℕ) : Prop :=
 
 /-- Zero-extension of a bit string. -/
 def zeroPad (k N : ℕ) : Fin N → Option (Fin k) := fun i => idx k i
+
+lemma ones_zeroPad {k N : ℕ} (hkN : k ≤ N) (x : Fin k → Bool) :
+    ones (fun i => (zeroPad k N i).elim false x) = ones x := by
+  rw [ones_eq_sum, ones_eq_sum]
+  calc
+    _ = ∑ i ∈ Finset.range N, (getD x i).toNat := by
+      apply Finset.sum_congr rfl
+      intro i hi
+      rw [getD_of_lt _ (Finset.mem_range.mp hi)]
+      simp [zeroPad]
+    _ = ∑ i ∈ Finset.range k, (getD x i).toNat := by
+      symm
+      apply Finset.sum_subset (Finset.range_mono hkN)
+      intro i _ hi
+      simp only [Finset.mem_range, not_lt] at hi
+      simp [getD_of_ge x hi]
+
+lemma modLang_projects (r : ℕ) {k N : ℕ} (hkN : k ≤ N) : Projects (ModLang r) k N :=
+  ⟨zeroPad k N, fun x => by simp only [ModLang, ones_zeroPad hkN]⟩
 
 lemma val_zeroPad {k N : ℕ} (hkN : k ≤ N) (x : Fin k → Bool) :
     val (fun i => (zeroPad k N i).elim false x) = val x := by
@@ -264,15 +284,47 @@ lemma asymptotic_core (c E n₀ : ℕ) (hc : 1 ≤ c) {δ : ℝ} (hδ : 0 < δ) 
 /-- Smolensky's theorem [Smo87], quantitative form, for DAG circuits: for distinct primes `p`,
 `q` and every depth `d` there is `δ > 0` such that for all large `n`, every depth-`d` circuit of
 `AND`, `OR`, `NOT` and `Mod_p` gates computing `Mod_q` on `n` bits has size at least
-`2^(n^δ)`.  Not available in Mathlib; used as a hypothesis. -/
+`2^(n^δ)`. Proved below as `smolenskyExpTheorem`. -/
 def SmolenskyExpTheorem : Prop :=
   ∀ p q : ℕ, p.Prime → q.Prime → p ≠ q → ∀ d : ℕ, ∃ δ : ℝ, 0 < δ ∧ ∃ n₀ : ℕ, ∀ n ≥ n₀,
     ∀ D : DAG n, D.depth ≤ d → (∀ x, D.eval (ModLang p) x = ModLang q n x) →
       (2 : ℝ) ^ ((n : ℝ) ^ δ) ≤ D.size
 
+/-- Quantitative Smolensky, using the individual-formula approximation bound and padding. -/
+theorem smolenskyExpTheorem : SmolenskyExpTheorem := by
+  intro p q hp hq hpq d
+  obtain ⟨c, hc, t₀, hlow⟩ := SmolenskyQuantitative.power_lower_bound p q (d + 2)
+    hp hq.one_lt ((Nat.coprime_primes hq hp).2 (Ne.symm hpq))
+  obtain ⟨δ, hδ, N₀, hN₀⟩ := asymptotic_core c (d + 1) t₀ hc (δ := 1) (by norm_num)
+  refine ⟨δ, hδ, N₀, fun N hN D hDd hDe => hN₀ N hN D.size ?_⟩
+  intro t ht htN
+  let M := (t + 2) ^ c
+  let C := D.toCircuit.subst fun i => wire (zeroPad M N i)
+  have hCd : C.depth ≤ d + 2 :=
+    (depth_subst_le _ (fun _ => depth_wire_le _) D.toCircuit).trans
+      (by have := D.toCircuit_bounds.2; omega)
+  have hCs : C.size ≤ D.toCircuit.size := by
+    simpa [C] using size_subst_le (fun i => wire (zeroPad M N i))
+      (fun _ => (size_wire _).le) (by omega : 1 ≤ 1) D.toCircuit
+  have hCe : ∀ x, C.eval (ModLang p) x = ModLang q M x := by
+    intro x
+    simp only [C, eval_subst, eval_wire, DAG.eval_toCircuit, hDe, ModLang]
+    rw [ones_zeroPad (show M ≤ N from htN)]
+  have hsize : 2 ^ t ≤ (D.size + 2) ^ (d + 1) :=
+    (hlow t ht C hCd hCe).trans (hCs.trans (D.toCircuit_bounds.1.trans
+      (Nat.pow_le_pow_right (by omega) (by omega))))
+  have hreal : (2 : ℝ) ^ t ≤ ((D.size : ℝ) + 2) ^ (d + 1) := by exact_mod_cast hsize
+  simp only [Real.rpow_one, Real.rpow_natCast]
+  calc
+    (2 : ℝ) ^ t ≤ ((D.size : ℝ) + 2) ^ (d + 1) := hreal
+    _ ≤ 3 * ((t + 2) ^ c : ℕ) * ((D.size : ℝ) + 2) ^ (d + 1) := by
+      have hM : (1 : ℝ) ≤ ((t + 2) ^ c : ℕ) := by
+        exact_mod_cast (Nat.one_le_pow c (t + 2) (by omega))
+      nlinarith [show (0 : ℝ) ≤ ((D.size : ℝ) + 2) ^ (d + 1) by positivity]
+
 /-- If `mult ≤ᵀ A` and `A` on shorter (valid) lengths is a projection of `A` on longer valid
 lengths, then bounded-depth `Mod_p` circuits for `A` need size `2^(N^δ)`. -/
-theorem exp_lower_bound_of_reduces (hS : SmolenskyExpTheorem) {A : Lang} (V : ℕ → Prop)
+theorem exp_lower_bound_of_reduces {A : Lang} (V : ℕ → Prop)
     (hproj : ∀ N, V N → ∀ k ≤ N, Projects A k N ∨ ∃ b, ∀ x, A k x = b)
     (hA : mult ≤ᵀ A) {p : ℕ} (hp : p.Prime) (d : ℕ) :
     ∃ δ : ℝ, 0 < δ ∧ ∃ N₀ : ℕ, ∀ N ≥ N₀, V N → ∀ D : DAG N, D.depth ≤ d →
@@ -283,7 +335,7 @@ theorem exp_lower_bound_of_reduces (hS : SmolenskyExpTheorem) {A : Lang} (V : �
   set cR := cR₀ + 1
   have hRs' : ∀ n, (R n).size ≤ (n + 2) ^ cR := fun n =>
     (hRs n).trans (Nat.pow_le_pow_right (by omega) (by omega))
-  obtain ⟨δ₀, hδ₀, n₀, hsm⟩ := hS p q hp hq (Ne.symm hqp) (dR * (d + 3) + 1)
+  obtain ⟨δ₀, hδ₀, n₀, hsm⟩ := smolenskyExpTheorem p q hp hq (Ne.symm hqp) (dR * (d + 3) + 1)
   set E := (d + 1) * dR
   obtain ⟨δ', hδ', N₀, hN₀⟩ := asymptotic_core cR E n₀ (by omega) hδ₀
   refine ⟨δ', hδ', N₀, fun N hN hV D hDd hDe => hN₀ N hN D.size fun n hn hnN => ?_⟩
@@ -308,31 +360,31 @@ theorem exp_lower_bound_of_reduces (hS : SmolenskyExpTheorem) {A : Lang} (V : �
     exact_mod_cast hsize
   linarith
 
-/-- **Corollary 2** (Primes, quantitative): assuming Smolensky's theorem and equation (1), for
+/-- **Corollary 2** (Primes, quantitative): assuming equation (1), for
 every prime `p` and depth `d`, depth-`d` circuits with `Mod_p` gates for `Primes` on `N` bits
 have size `≥ 2^(N^δ)` for some `δ > 0` and all large `N`. -/
-theorem primes_exp_lower_bound (hS : SmolenskyExpTheorem) (hP : PageEstimate) {p : ℕ}
+theorem primes_exp_lower_bound (hP : PageEstimate) {p : ℕ}
     (hp : p.Prime) (d : ℕ) :
     ∃ δ : ℝ, 0 < δ ∧ ∃ N₀ : ℕ, ∀ N ≥ N₀, ∀ D : DAG N, D.depth ≤ d →
       (∀ x, D.eval (ModLang p) x = Primes N x) → (2 : ℝ) ^ ((N : ℝ) ^ δ) ≤ D.size := by
-  obtain ⟨δ, hδ, N₀, h⟩ := exp_lower_bound_of_reduces hS (fun _ => True)
+  obtain ⟨δ, hδ, N₀, h⟩ := exp_lower_bound_of_reduces (fun _ => True)
     (fun _ _ k hk => Or.inl (primes_projects hk)) (mult_reduces_primes hP) hp d
   exact ⟨δ, hδ, N₀, fun N hN => h N hN trivial⟩
 
-/-- **Corollary 2** (Square-Free, quantitative), assuming Smolensky's theorem. -/
-theorem squarefree_exp_lower_bound (hS : SmolenskyExpTheorem) {p : ℕ} (hp : p.Prime) (d : ℕ) :
+/-- **Corollary 2** (Square-Free, quantitative). -/
+theorem squarefree_exp_lower_bound {p : ℕ} (hp : p.Prime) (d : ℕ) :
     ∃ δ : ℝ, 0 < δ ∧ ∃ N₀ : ℕ, ∀ N ≥ N₀, ∀ D : DAG N, D.depth ≤ d →
       (∀ x, D.eval (ModLang p) x = SquareFree N x) → (2 : ℝ) ^ ((N : ℝ) ^ δ) ≤ D.size := by
-  obtain ⟨δ, hδ, N₀, h⟩ := exp_lower_bound_of_reduces hS (fun _ => True)
+  obtain ⟨δ, hδ, N₀, h⟩ := exp_lower_bound_of_reduces (fun _ => True)
     (fun _ _ k hk => Or.inl (squarefree_projects hk)) mult_reduces_squarefree hp d
   exact ⟨δ, hδ, N₀, fun N hN => h N hN trivial⟩
 
-/-- **Corollary 2** (GCD, quantitative), assuming Smolensky's theorem.  Only input lengths
+/-- **Corollary 2** (GCD, quantitative). Only input lengths
 divisible by `3` encode triples; on other lengths `GCD` is constant by definition. -/
-theorem gcd_exp_lower_bound (hS : SmolenskyExpTheorem) {p : ℕ} (hp : p.Prime) (d : ℕ) :
+theorem gcd_exp_lower_bound {p : ℕ} (hp : p.Prime) (d : ℕ) :
     ∃ δ : ℝ, 0 < δ ∧ ∃ N₀ : ℕ, ∀ N ≥ N₀, 3 ∣ N → ∀ D : DAG N, D.depth ≤ d →
       (∀ x, D.eval (ModLang p) x = GCD N x) → (2 : ℝ) ^ ((N : ℝ) ^ δ) ≤ D.size := by
-  refine exp_lower_bound_of_reduces hS (fun N => 3 ∣ N) ?_ mult_reduces_gcd hp d
+  refine exp_lower_bound_of_reduces (fun N => 3 ∣ N) ?_ mult_reduces_gcd hp d
   rintro N ⟨b, rfl⟩ k hk
   by_cases h3 : 3 ∣ k
   · obtain ⟨a, rfl⟩ := h3

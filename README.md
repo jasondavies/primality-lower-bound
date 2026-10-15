@@ -32,23 +32,59 @@ and declares no axioms. `#print axioms` on every main theorem shows only `propex
 | Theorem 1: `TC⁰ ⊆ AC⁰[GCD]` | `tc0_subset_ac0_gcd`, `tc0DAG_subset_ac0DAG_gcd` | none |
 | Theorem 1: `TC⁰ ⊆ AC⁰[Square-Free]` | `tc0_subset_ac0_squarefree`, `tc0DAG_subset_ac0DAG_squarefree` | none |
 | Theorem 1: `TC⁰ ⊆ AC⁰[Primes]` | `tc0_subset_ac0_primes`, `tc0DAG_subset_ac0DAG_primes` | `PageEstimate` |
-| Corollary 2: not in `AC⁰[p]` | `gcd_not_mem_ac0DAG_mod`, `squarefree_not_mem_ac0DAG_mod`, `primes_not_mem_ac0DAG_mod` | `SmolenskyTheorem` (and `PageEstimate` for Primes) |
-| Corollary 2: size `≥ 2^(N^δ)` | `gcd_exp_lower_bound`, `squarefree_exp_lower_bound`, `primes_exp_lower_bound` | `SmolenskyExpTheorem` (and `PageEstimate` for Primes) |
+| Corollary 2: GCD and Square-Free not in `AC⁰[p]` | `gcd_not_mem_ac0DAG_mod`, `squarefree_not_mem_ac0DAG_mod` | none |
+| Corollary 2: Primes not in `AC⁰[p]` | `primes_not_mem_ac0DAG_mod` | `PageEstimate` |
+| Corollary 2: GCD and Square-Free size `≥ 2^(N^δ)` | `gcd_exp_lower_bound`, `squarefree_exp_lower_bound` | none |
+| Corollary 2: Primes size `≥ 2^(N^δ)` | `primes_exp_lower_bound` | `PageEstimate` |
 | Transitivity of `≤ᵀ` | `Reduces.trans` | none |
 
 ### External theorems used as hypotheses
 
-Two deep results cited by the paper are not in Mathlib. They are stated as explicit `Prop`s and
-passed as hypotheses, never as axioms.
+Only `PageEstimate` remains an external theorem hypothesis, stated as a `Prop`, never an axiom:
 
 - **`PageEstimate`** (`Page.lean`) is the paper's equation (1). It says that, uniformly for
   primes `p ≤ n` and `1 ≤ l < p`, the number of primes `q ≤ 2ⁿ` with `q ≡ l (mod p)` is
   asymptotic to `2ⁿ / (n (p − 1) ln 2)`. This follows from Page's theorem or the
   Siegel–Walfisz theorem. From it we derive the only consequence the proof uses:
   `PageEstimate.window` gives a lower bound on primes in a residue class in `(2ⁿ, 2ⁿ⁺¹]`.
-- **`SmolenskyTheorem`** (`Main.lean`) says that for distinct primes `p ≠ q`, `Mod_q` is not in
-  AC⁰[Mod_p] (DAG model). **`SmolenskyExpTheorem`** (`Quantitative.lean`) is the quantitative
-  form: depth-d circuits need size `2^(n^δ)`.
+
+Proving this hypothesis remains unfinished. The inspected
+[PNT project at revision c39a751](https://github.com/AlexKontorovich/PrimeNumberTheoremAnd/blob/c39a751132c88b6e8080b74c74023fd95b3d8be0/PrimeNumberTheoremAnd/Wiener.lean)
+provides `WeakPNT_AP` for each fixed modulus. Its threshold may depend on that modulus;
+`PageEstimate` needs one threshold valid simultaneously for every prime `p ≤ n`.
+The missing analytic ingredient is a uniform prime-counting estimate in arithmetic
+progressions. A standard route would develop quantitative Dirichlet L-function zero-free
+estimates, control of an exceptional real zero, and the resulting prime-counting error bound.
+
+### Formalised qualitative Smolensky theorem
+
+`smolenskyTheorem : SmolenskyTheorem` (`Smolensky.lean`) proves that, for distinct primes
+`p ≠ q`, `Mod_q` is not in AC⁰[Mod_p]. It uses the qualitative formula lower bound from
+[formalcs/circuit-complexity](https://github.com/formalcs/circuit-complexity/tree/8b1a1afd4a816edb0ed0716f20ec739ab2c033d9).
+The required 34 source modules are vendored with their Apache-2.0 license;
+[UPSTREAM.md](vendor/circuit-complexity/UPSTREAM.md) records the revision and compatibility edit.
+
+The bridge translates PLB formulas to upstream ACC formulas, proves equality of evaluations
+and node counts, and bounds depth and input indices. It then applies the upstream lower bound
+and the existing DAG/formula equivalence. Its axiom dependencies are only `propext`,
+`Classical.choice` and `Quot.sound`. The six qualitative `*_not_mem_ac0*_mod` theorems no longer
+take a `SmolenskyTheorem` argument; the Primes theorems still take `PageEstimate`.
+
+### Formalised quantitative Smolensky theorem
+
+`smolenskyExpTheorem : SmolenskyExpTheorem` (`Quantitative.lean`) proves the exponential
+lower bound for individual DAG circuits, uniformly over all sufficiently large input lengths.
+`SmolenskyQuantitative.lean` extracts an explicit approximation for a single formula on
+`n ≥ 1` inputs, of size at most `B` with `n ≤ B`: degree `O((log B)^(8d+1))`, with error
+on at most a `1/n` fraction of inputs.
+The upstream polynomial obstruction then gives size at least `2^t` on a polynomial sequence
+of input lengths. Zero-padding and the existing asymptotic argument extend this to all large
+lengths and convert formula size to DAG size.
+
+The quantitative GCD and square-free lower bounds are unconditional; the quantitative
+Primes bound requires only `PageEstimate`. These theorems no longer take a
+`SmolenskyExpTheorem` argument. Their axiom dependencies are only `propext`,
+`Classical.choice` and `Quot.sound`.
 
 ## Circuit model
 
@@ -112,4 +148,6 @@ The remarks and open problems in Section 4 are not formalised. This includes the
 | `Page.lean` | equation (1) and its consequence |
 | `Primes.lean` | `mult ≤ᵀ Primes` |
 | `Main.lean` | Theorem 1 and Corollary 2 |
+| `Smolensky.lean` | translation to upstream ACC formulas and qualitative Smolensky proof |
+| `SmolenskyQuantitative.lean` | individual-formula approximation and quantitative polynomial obstruction |
 | `Quantitative.lean` | the exponential form of Corollary 2 |

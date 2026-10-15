@@ -2,15 +2,15 @@ import PrimalityLowerBound.Lemma4
 import PrimalityLowerBound.GCD
 import PrimalityLowerBound.SquareFree
 import PrimalityLowerBound.Primes
-import PrimalityLowerBound.DAG
+import PrimalityLowerBound.Smolensky
 
 /-!
 # Main results
 
 * **Theorem 1.** `TC⁰ ⊆ AC⁰[GCD]`, `TC⁰ ⊆ AC⁰[Square-Free]` (unconditional) and
   `TC⁰ ⊆ AC⁰[Primes]` (assuming equation (1) of the paper, `PageEstimate`).
-* **Corollary 2.** Assuming Smolensky's theorem, none of `Primes`, `GCD`, `Square-Free` is in
-  `AC⁰[p]` for any prime `p`.
+* **Corollary 2.** `GCD` and `Square-Free` are not in `AC⁰[p]` for any prime `p`.
+  The same holds for `Primes` assuming `PageEstimate`. Qualitative Smolensky is proved.
 
 Both are stated for the formula model (`AC0`) and for the DAG-circuit model of the paper
 (`AC0DAG`); the two models coincide (`AC0DAG_eq`).
@@ -65,12 +65,6 @@ theorem tc0DAG_subset_ac0DAG_primes (hP : PageEstimate) : TC0DAG ⊆ AC0DAG Prim
 
 /-! ### Corollary 2 -/
 
-/-- Smolensky's theorem [Smo87] (building on Razborov [Raz87]), qualitative form: for distinct
-primes `p` and `q`, `Mod_q` is not computed by polynomial-size constant-depth circuits (DAGs) of
-`AND`, `OR`, `NOT` and `Mod_p` gates.  Not available in Mathlib; used as a hypothesis. -/
-def SmolenskyTheorem : Prop :=
-  ∀ p q : ℕ, p.Prime → q.Prime → p ≠ q → ModLang q ∉ AC0DAG (ModLang p)
-
 /-- `Mod_{p_j} ≤ᵀ mult`: a single `mult` gate (the gadget `M_{j,0}` of Lemma 4). -/
 theorem modLang_reduces_mult {j : ℕ} (hj : 1 ≤ j) : ModLang (oddPrime j) ≤ᵀ mult := by
   refine Reduces.of_eventually 2 12 j fun n hn => ⟨resGate n j 0, depth_resGate_le n j 0, ?_, ?_⟩
@@ -93,42 +87,42 @@ lemma exists_modLang_reduces_mult (p : ℕ) :
   · refine ⟨3, by norm_num, Ne.symm hp, ?_⟩
     rw [← oddPrime_one]; exact modLang_reduces_mult (by norm_num)
 
-lemma not_mem_ac0_mod_of_mult_reduces (hS : SmolenskyTheorem) {A : Lang} (hA : mult ≤ᵀ A)
+lemma not_mem_ac0_mod_of_mult_reduces {A : Lang} (hA : mult ≤ᵀ A)
     {p : ℕ} (hp : p.Prime) : A ∉ AC0 (ModLang p) := by
   intro hAp
   obtain ⟨q, hq, hqp, hqm⟩ := exists_modLang_reduces_mult p
-  have := hS p q hp hq (Ne.symm hqp)
+  have := smolenskyTheorem p q hp hq (Ne.symm hqp)
   rw [AC0DAG_eq] at this
   exact this ((hqm.trans hA).trans hAp)
 
-/-- **Corollary 2** (GCD): assuming Smolensky's theorem, `GCD ∉ AC⁰[p]` for every prime `p`. -/
-theorem gcd_not_mem_ac0_mod (hS : SmolenskyTheorem) {p : ℕ} (hp : p.Prime) :
+/-- **Corollary 2** (GCD): `GCD ∉ AC⁰[p]` for every prime `p`. -/
+theorem gcd_not_mem_ac0_mod {p : ℕ} (hp : p.Prime) :
     GCD ∉ AC0 (ModLang p) :=
-  not_mem_ac0_mod_of_mult_reduces hS mult_reduces_gcd hp
+  not_mem_ac0_mod_of_mult_reduces mult_reduces_gcd hp
 
-/-- **Corollary 2** (Square-Free): assuming Smolensky's theorem, `Square-Free ∉ AC⁰[p]`. -/
-theorem squarefree_not_mem_ac0_mod (hS : SmolenskyTheorem) {p : ℕ} (hp : p.Prime) :
+/-- **Corollary 2** (Square-Free): `Square-Free ∉ AC⁰[p]`. -/
+theorem squarefree_not_mem_ac0_mod {p : ℕ} (hp : p.Prime) :
     SquareFree ∉ AC0 (ModLang p) :=
-  not_mem_ac0_mod_of_mult_reduces hS mult_reduces_squarefree hp
+  not_mem_ac0_mod_of_mult_reduces mult_reduces_squarefree hp
 
-/-- **Corollary 2** (Primes): assuming Smolensky's theorem and equation (1),
+/-- **Corollary 2** (Primes): assuming equation (1),
 `Primes ∉ AC⁰[p]` for every prime `p`. -/
-theorem primes_not_mem_ac0_mod (hS : SmolenskyTheorem) (hP : PageEstimate) {p : ℕ}
+theorem primes_not_mem_ac0_mod (hP : PageEstimate) {p : ℕ}
     (hp : p.Prime) : Primes ∉ AC0 (ModLang p) :=
-  not_mem_ac0_mod_of_mult_reduces hS (mult_reduces_primes hP) hp
+  not_mem_ac0_mod_of_mult_reduces (mult_reduces_primes hP) hp
 
 /-! ### Corollary 2 in the DAG-circuit model -/
 
-theorem gcd_not_mem_ac0DAG_mod (hS : SmolenskyTheorem) {p : ℕ} (hp : p.Prime) :
+theorem gcd_not_mem_ac0DAG_mod {p : ℕ} (hp : p.Prime) :
     GCD ∉ AC0DAG (ModLang p) := by
-  rw [AC0DAG_eq]; exact gcd_not_mem_ac0_mod hS hp
+  rw [AC0DAG_eq]; exact gcd_not_mem_ac0_mod hp
 
-theorem squarefree_not_mem_ac0DAG_mod (hS : SmolenskyTheorem) {p : ℕ} (hp : p.Prime) :
+theorem squarefree_not_mem_ac0DAG_mod {p : ℕ} (hp : p.Prime) :
     SquareFree ∉ AC0DAG (ModLang p) := by
-  rw [AC0DAG_eq]; exact squarefree_not_mem_ac0_mod hS hp
+  rw [AC0DAG_eq]; exact squarefree_not_mem_ac0_mod hp
 
-theorem primes_not_mem_ac0DAG_mod (hS : SmolenskyTheorem) (hP : PageEstimate) {p : ℕ}
+theorem primes_not_mem_ac0DAG_mod (hP : PageEstimate) {p : ℕ}
     (hp : p.Prime) : Primes ∉ AC0DAG (ModLang p) := by
-  rw [AC0DAG_eq]; exact primes_not_mem_ac0_mod hS hP hp
+  rw [AC0DAG_eq]; exact primes_not_mem_ac0_mod hP hp
 
 end PLB
