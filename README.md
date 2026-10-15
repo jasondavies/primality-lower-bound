@@ -63,8 +63,9 @@ on `propext`, `Classical.choice`, and `Quot.sound`; the main results are uncondi
 `smolenskyTheorem` (`Quantitative.lean`) proves that, for distinct primes `p ≠ q`,
 `Mod_q` is not in AC⁰[Mod_p]. It follows from `smolenskyExpTheorem`: a bound of
 `2^(n^δ)` eventually exceeds every polynomial size bound. The six qualitative
-`*_not_mem_ac0*_mod` theorems follow from the corresponding exponential bounds
-for Primes, GCD and Square-Free.
+`*_not_mem_ac0*_mod` theorems in `Main.lean` use the general lemma
+`not_mem_ac0_mod_of_mult_reduces`: any language `A` with `mult ≤ᵀ A` lies outside
+AC⁰[Mod_p] for prime `p`, by Smolensky and transitivity of reductions.
 
 The shared proof uses 32 source modules from
 [formalcs/circuit-complexity](https://github.com/formalcs/circuit-complexity/tree/8b1a1afd4a816edb0ed0716f20ec739ab2c033d9),

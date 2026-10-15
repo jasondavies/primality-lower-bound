@@ -8,8 +8,9 @@ and the low-degree disagreement theorem used by the PLB Smolensky proof.
 `PrimalityLowerBound/SmolenskyQuantitative.lean` uses the internal approximation APIs
 and adapts the residue-counting argument from upstream
 [`ACC/LowerBounds/Smolensky/Formula.lean`](https://github.com/formalcs/circuit-complexity/blob/8b1a1afd4a816edb0ed0716f20ec739ab2c033d9/ACC/LowerBounds/Smolensky/Formula.lean)
-and its dependencies. This local obstruction proof is shared by the quantitative
-and qualitative results in `PrimalityLowerBound/Quantitative.lean`.
+and its dependencies. This local obstruction proof supports both Smolensky theorems
+in `PrimalityLowerBound/Quantitative.lean`. The qualitative corollaries are derived
+in `PrimalityLowerBound/Main.lean` using Smolensky and transitivity of reductions.
 The upstream `Formula.lean` and `Asymptotics/Polylogarithmic.lean` modules are not
 included; the PLB proof uses its own shared asymptotic estimates.
 
